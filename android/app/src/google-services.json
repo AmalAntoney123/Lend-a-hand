@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "869833039303",
+    "project_id": "lend-a-hand-f95b6",
+    "storage_bucket": "lend-a-hand-f95b6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:869833039303:android:aad7b75cc23b71943d8de2",
+        "android_client_info": {
+          "package_name": "com.example.lendahand"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "869833039303-b18n3683jlh92c8858hitf239v3qcoqk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.lendahand",
+            "certificate_hash": "349c32ebee82709e1c7ebfec2df314692139b4f1"
+          }
+        },
+        {
+          "client_id": "869833039303-0lnb2iitqtokmbm4q6q1sm1ch5k8gpr7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB0dTs3DpWtg7znDAKOEZiu6j519xsLSrU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "869833039303-0lnb2iitqtokmbm4q6q1sm1ch5k8gpr7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
