@@ -144,8 +144,6 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
             count: 20,
             size: 15,
             color: Colors.white,
-            fallRangeMinDurMill: 1000,
-            fallRangeMaxDurMill: 2000,
           ),
         ),
       ];

@@ -3,7 +3,6 @@ import '../settings/settings_screen.dart';
 import '../tabs/updates_screen.dart';
 import '../tabs/donate_screen.dart';
 import '../tabs/home_tab_screen.dart';
-import '../../theme/app_theme.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.title});

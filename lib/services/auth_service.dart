@@ -1,8 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Get current user
   User? get currentUser => _auth.currentUser;
@@ -17,15 +19,36 @@ class AuthService {
         email: email,
         password: password,
       );
-      return (userCredential, null);
+
+      if (userCredential.user != null) {
+        // Check if user is approved
+        final userDoc = await _firestore
+            .collection('users')
+            .doc(userCredential.user!.uid)
+            .get();
+
+        if (!userDoc.exists) {
+          await _auth.signOut();
+          return (null, 'User data not found');
+        }
+
+        final isApproved = userDoc.data()?['isApproved'] ?? false;
+        final role = userDoc.data()?['role'] ?? '';
+
+        if (!isApproved && role != 'commoner') {
+          await _auth.signOut();
+          return (null, 'Your account is pending approval');
+        }
+
+        return (userCredential, null);
+      }
+      return (null, 'An error occurred');
     } on FirebaseAuthException catch (e) {
       String message = 'An error occurred';
       if (e.code == 'user-not-found') {
         message = 'No user found with this email';
       } else if (e.code == 'wrong-password') {
         message = 'Wrong password provided';
-      } else if (e.code == 'invalid-email') {
-        message = 'Invalid email address';
       }
       return (null, message);
     }
@@ -33,12 +56,28 @@ class AuthService {
 
   // Register with email and password
   Future<(UserCredential?, String?)> registerWithEmailAndPassword(
-      String email, String password) async {
+      String email, String password, String role) async {
     try {
       final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
+
+      if (userCredential.user != null) {
+        // Create user document in Firestore
+        await _firestore.collection('users').doc(userCredential.user!.uid).set({
+          'uid': userCredential.user!.uid,
+          'email': email,
+          'role': role.toLowerCase(),
+          'isApproved':
+              role.toLowerCase() == 'commoner', // Auto-approve commoners
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+
+        // Sign out the user after registration
+        await _auth.signOut();
+      }
+
       return (userCredential, null);
     } on FirebaseAuthException catch (e) {
       String message = 'An error occurred';
@@ -74,6 +113,7 @@ class AuthService {
 
   Future<(UserCredential?, String?)> signInWithGoogle() async {
     try {
+      await GoogleSignIn().signOut();
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
       if (googleUser == null) {
         return (null, 'Google sign-in aborted');

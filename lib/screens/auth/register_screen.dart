@@ -178,6 +178,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                                   .registerWithEmailAndPassword(
                                             _emailController.text,
                                             _passwordController.text,
+                                            _selectedRole,
                                           );
 
                                           setState(() => _isLoading = false);
@@ -192,7 +193,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                             );
                                           } else if (result != null) {
                                             Navigator.pushReplacementNamed(
-                                                context, '/home');
+                                                context, '/login');
                                           }
                                         }
                                       },

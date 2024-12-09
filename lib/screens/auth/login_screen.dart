@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 import '../../theme/app_theme.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -249,8 +250,37 @@ class _LoginScreenState extends State<LoginScreen> {
                                             _showErrorDialog(error);
                                           } else if (result != null) {
                                             if (!mounted) return;
-                                            Navigator.pushReplacementNamed(
-                                                context, '/home');
+
+                                            // Get user role from Firestore
+                                            final userDoc =
+                                                await FirebaseFirestore.instance
+                                                    .collection('users')
+                                                    .doc(result.user!.uid)
+                                                    .get();
+
+                                            if (!mounted) return;
+
+                                            final role = userDoc.data()?['role']
+                                                as String;
+
+                                            // Role-based navigation
+                                            switch (role) {
+                                              case 'admin':
+                                                Navigator.pushReplacementNamed(
+                                                    context, '/admin');
+                                                break;
+                                              case 'coordinator':
+                                                Navigator.pushReplacementNamed(
+                                                    context, '/coordinator');
+                                                break;
+                                              case 'volunteer':
+                                                Navigator.pushReplacementNamed(
+                                                    context, '/volunteer');
+                                                break;
+                                              default:
+                                                Navigator.pushReplacementNamed(
+                                                    context, '/home');
+                                            }
                                           }
                                         }
                                       },
