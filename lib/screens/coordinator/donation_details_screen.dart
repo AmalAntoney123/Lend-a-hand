@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../../services/donation_service.dart';
 
 class DonationDetailsScreen extends StatelessWidget {
@@ -526,83 +524,157 @@ class DonationDetailsScreen extends StatelessWidget {
               );
             }
 
-            return Column(
-              children: [
-                if (moneyDonations.isNotEmpty) ...[
-                  ListTile(
-                    title: Text(
-                      'Money Donations',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+            // Calculate total money received
+            final totalMoney = moneyDonations.fold<double>(
+              0,
+              (sum, donation) => sum + (donation['amount'] as num).toDouble(),
+            );
+
+            return DefaultTabController(
+              length: 2,
+              child: Column(
+                children: [
+                  TabBar(
+                    tabs: const [
+                      Tab(text: 'Money Donations'),
+                      Tab(text: 'Item Donations'),
+                    ],
+                    labelColor: Theme.of(context).colorScheme.primary,
+                    unselectedLabelColor:
+                        Theme.of(context).colorScheme.onSurface,
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    height: 400, // Adjust this height as needed
+                    child: TabBarView(
+                      children: [
+                        // Money Donations Tab
+                        Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .primaryContainer,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Total Received:',
+                                    style:
+                                        Theme.of(context).textTheme.titleMedium,
+                                  ),
+                                  Text(
+                                    '₹${totalMoney.toStringAsFixed(2)}',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Expanded(
+                              child: ListView.builder(
+                                itemCount: moneyDonations.length,
+                                itemBuilder: (context, index) {
+                                  final donation = moneyDonations[index];
+                                  return Card(
+                                    elevation: 1,
+                                    margin: const EdgeInsets.only(bottom: 8),
+                                    child: ListTile(
+                                      leading: Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primaryContainer,
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        child: Icon(
+                                          Icons.attach_money,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onPrimaryContainer,
+                                        ),
+                                      ),
+                                      title: Text('₹${donation['amount']}'),
+                                      subtitle: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                              'Donor: ${donation['donorName']}'),
+                                          Text(
+                                              'Payment ID: ${donation['paymentId']}'),
+                                        ],
+                                      ),
+                                      trailing: Text(
+                                        DateFormat('MM/dd/yyyy').format(
+                                            (donation['date'] as Timestamp)
+                                                .toDate()),
+                                      ),
+                                      isThreeLine: true,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        // Item Donations Tab
+                        ListView.builder(
+                          itemCount: itemDonations.length,
+                          itemBuilder: (context, index) {
+                            final donation = itemDonations[index];
+                            return Card(
+                              elevation: 1,
+                              margin: const EdgeInsets.only(bottom: 8),
+                              child: ListTile(
+                                leading: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .primaryContainer,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    Icons.inventory,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onPrimaryContainer,
+                                  ),
+                                ),
+                                title: Text(donation['item']),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Donor: ${donation['donorName']}'),
+                                    Text(
+                                        'Description: ${donation['description']}'),
+                                  ],
+                                ),
+                                trailing: Text(
+                                  DateFormat('MM/dd/yyyy').format(
+                                      (donation['date'] as Timestamp).toDate()),
+                                ),
+                                isThreeLine: true,
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                     ),
                   ),
-                  ...moneyDonations.map((donation) => Card(
-                        elevation: 1,
-                        margin: const EdgeInsets.only(bottom: 8),
-                        child: ListTile(
-                          leading: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .primaryContainer,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              Icons.attach_money,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onPrimaryContainer,
-                            ),
-                          ),
-                          title: Text('\$${donation['amount']}'),
-                          subtitle: Text(donation['donor']),
-                          trailing: Text(
-                            DateFormat('MM/dd/yyyy').format(
-                                (donation['date'] as Timestamp).toDate()),
-                          ),
-                        ),
-                      )),
                 ],
-                if (itemDonations.isNotEmpty) ...[
-                  ListTile(
-                    title: Text(
-                      'Item Donations',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                  ),
-                  ...itemDonations.map((donation) => Card(
-                        elevation: 1,
-                        margin: const EdgeInsets.only(bottom: 8),
-                        child: ListTile(
-                          leading: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .primaryContainer,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              Icons.inventory,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onPrimaryContainer,
-                            ),
-                          ),
-                          title: Text(donation['item']),
-                          subtitle: Text(donation['donor']),
-                          trailing: Text(
-                            DateFormat('MM/dd/yyyy').format(
-                                (donation['date'] as Timestamp).toDate()),
-                          ),
-                        ),
-                      )),
-                ],
-              ],
+              ),
             );
           },
         ),

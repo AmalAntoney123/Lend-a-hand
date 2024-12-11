@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:lendahand/screens/coordinator/coordinator_donate_screen.dart';
 import '../settings/settings_screen.dart';
 import '../tabs/updates_screen.dart';
-import '../tabs/donate_screen.dart';
 import 'volunteer_requests_screen.dart';
 
 class CoordinatorScreen extends StatefulWidget {
