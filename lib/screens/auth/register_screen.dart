@@ -19,6 +19,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscurePassword = true;
   bool _isLoading = false;
 
+  // Add new controllers
+  final _fullNameController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _ageController = TextEditingController();
+  final _bloodGroupController = TextEditingController();
+  final _phoneNumberController = TextEditingController();
+  final _skillsController = TextEditingController();
+  String _selectedSex = 'MALE'; // Default sex
+
+  // Add blood group options
+  String _selectedBloodGroup = 'A+'; // Default blood group
+  final List<String> _bloodGroups = [
+    'A+',
+    'A-',
+    'B+',
+    'B-',
+    'O+',
+    'O-',
+    'AB+',
+    'AB-'
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -31,42 +53,224 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 child: IntrinsicHeight(
                   child: Column(
                     children: [
-                      // Logo section
-                      Expanded(
-                        child: Center(
-                          child: Image.asset(
-                            'assets/lendahand_logo.png',
-                            height: constraints.maxHeight * 0.2,
+                      // Heading
+                      Container(
+                        padding: const EdgeInsets.all(24.0),
+                        child: const Text(
+                          'Create an Account',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.darkBlue,
                           ),
                         ),
                       ),
-                      // Register section
+                      // Form section
                       Container(
-                        padding: const EdgeInsets.all(24.0),
+                        padding: const EdgeInsets.symmetric(horizontal: 24.0),
                         child: Form(
                           key: _formKey,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
+                              // Email and Full Name
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: _emailController,
+                                      decoration: InputDecoration(
+                                        labelText: 'Email',
+                                        prefixIcon: Icon(
+                                          Icons.email_outlined,
+                                          color: AppColors.secondaryYellow,
+                                        ),
+                                      ),
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return 'Please enter your email';
+                                        }
+                                        if (!RegExp(r'^[^@]+@[^@]+\.[^@]+')
+                                            .hasMatch(value)) {
+                                          return 'Please enter a valid email';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: _fullNameController,
+                                      decoration: InputDecoration(
+                                        labelText: 'Full Name',
+                                        prefixIcon: Icon(
+                                          Icons.person,
+                                          color: AppColors.secondaryYellow,
+                                        ),
+                                      ),
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return 'Please enter your full name';
+                                        }
+                                        if (value.length < 3) {
+                                          return 'Name should be at least 3 characters';
+                                        }
+                                        if (!RegExp(r'^[a-zA-Z\s]+$')
+                                            .hasMatch(value)) {
+                                          return 'Name should only contain letters';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              // Age and Sex
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: _ageController,
+                                      keyboardType: TextInputType.number,
+                                      decoration: InputDecoration(
+                                        labelText: 'Age',
+                                        prefixIcon: Icon(
+                                          Icons.calendar_today,
+                                          color: AppColors.secondaryYellow,
+                                        ),
+                                      ),
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return 'Please enter your age';
+                                        }
+                                        final age = int.tryParse(value);
+                                        if (age == null) {
+                                          return 'Please enter a valid age';
+                                        }
+                                        if (age < 18 || age > 100) {
+                                          return 'Age must be between 18 and 100';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: DropdownButtonFormField<String>(
+                                      value: _selectedSex,
+                                      decoration: InputDecoration(
+                                        labelText: 'Sex',
+                                        prefixIcon: Icon(
+                                          Icons.people,
+                                          color: AppColors.secondaryYellow,
+                                        ),
+                                      ),
+                                      items: ['MALE', 'FEMALE', 'OTHER']
+                                          .map((sex) => DropdownMenuItem(
+                                                value: sex,
+                                                child: Text(sex),
+                                              ))
+                                          .toList(),
+                                      onChanged: (value) {
+                                        setState(() {
+                                          _selectedSex = value!;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              // Blood Group and Phone Number
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: DropdownButtonFormField<String>(
+                                      value: _selectedBloodGroup,
+                                      decoration: InputDecoration(
+                                        labelText: 'Blood Group',
+                                        prefixIcon: Icon(
+                                          Icons.bloodtype,
+                                          color: AppColors.secondaryYellow,
+                                        ),
+                                      ),
+                                      items: _bloodGroups
+                                          .map((group) => DropdownMenuItem(
+                                                value: group,
+                                                child: Text(group),
+                                              ))
+                                          .toList(),
+                                      onChanged: (value) {
+                                        setState(() {
+                                          _selectedBloodGroup = value!;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: _phoneNumberController,
+                                      keyboardType: TextInputType.phone,
+                                      decoration: InputDecoration(
+                                        labelText: 'Phone Number',
+                                        prefixIcon: Icon(
+                                          Icons.phone,
+                                          color: AppColors.secondaryYellow,
+                                        ),
+                                      ),
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return 'Please enter your phone number';
+                                        }
+                                        if (!RegExp(r'^\d{10}$')
+                                            .hasMatch(value)) {
+                                          return 'Enter a valid 10-digit number';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              // Address
                               TextFormField(
-                                controller: _emailController,
+                                controller: _addressController,
                                 decoration: InputDecoration(
-                                  labelText: 'Email',
+                                  labelText: 'Address',
                                   prefixIcon: Icon(
-                                    Icons.email_outlined,
+                                    Icons.home,
                                     color: AppColors.secondaryYellow,
                                   ),
                                 ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return 'Please enter your email';
+                                    return 'Please enter your address';
                                   }
-                                  if (!RegExp(r'^[^@]+@[^@]+\.[^@]+')
-                                      .hasMatch(value)) {
-                                    return 'Please enter a valid email';
+                                  if (value.length < 10) {
+                                    return 'Address should be at least 10 characters';
                                   }
                                   return null;
                                 },
+                              ),
+                              const SizedBox(height: 16),
+                              // Skills as a text box
+                              TextFormField(
+                                controller: _skillsController,
+                                maxLines: 3,
+                                decoration: InputDecoration(
+                                  labelText: 'Skills (Optional)',
+                                  hintText:
+                                      'Enter your skills (comma separated)',
+                                  prefixIcon: Icon(
+                                    Icons.psychology,
+                                    color: AppColors.secondaryYellow,
+                                  ),
+                                  alignLabelWithHint: true,
+                                ),
                               ),
                               const SizedBox(height: 16),
                               TextFormField(
@@ -173,27 +377,58 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                         if (_formKey.currentState!.validate()) {
                                           setState(() => _isLoading = true);
 
-                                          final (result, error) =
-                                              await _authService
-                                                  .registerWithEmailAndPassword(
-                                            _emailController.text,
-                                            _passwordController.text,
-                                            _selectedRole,
-                                          );
+                                          try {
+                                            final (result, error) =
+                                                await _authService
+                                                    .registerWithEmailAndPassword(
+                                              _emailController.text,
+                                              _passwordController.text,
+                                              _selectedRole,
+                                              fullName:
+                                                  _fullNameController.text,
+                                              address: _addressController.text,
+                                              age: int.parse(_ageController.text),
+                                              sex: _selectedSex,
+                                              bloodGroup:
+                                                  _selectedBloodGroup,
+                                              phoneNumber:
+                                                  _phoneNumberController.text,
+                                              skills: _skillsController
+                                                      .text.isEmpty
+                                                  ? 'None'
+                                                  : _skillsController.text,
+                                            );
 
-                                          setState(() => _isLoading = false);
+                                            // Check if widget is still mounted before updating state
+                                            if (!mounted) return;
 
-                                          if (error != null) {
+                                            setState(() => _isLoading = false);
+
+                                            if (error != null) {
+                                              if (!mounted) return;
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                SnackBar(
+                                                  content: Text(error),
+                                                  backgroundColor: Colors.red,
+                                                ),
+                                              );
+                                            } else if (result != null) {
+                                              if (!mounted) return;
+                                              Navigator.pushReplacementNamed(
+                                                  context, '/login');
+                                            }
+                                          } catch (e) {
+                                            if (!mounted) return;
+                                            setState(() => _isLoading = false);
                                             ScaffoldMessenger.of(context)
                                                 .showSnackBar(
                                               SnackBar(
-                                                content: Text(error),
+                                                content: Text(
+                                                    'Error: ${e.toString()}'),
                                                 backgroundColor: Colors.red,
                                               ),
                                             );
-                                          } else if (result != null) {
-                                            Navigator.pushReplacementNamed(
-                                                context, '/login');
                                           }
                                         }
                                       },

@@ -237,50 +237,68 @@ class _LoginScreenState extends State<LoginScreen> {
                                         if (_formKey.currentState!.validate()) {
                                           setState(() => _isLoading = true);
 
-                                          final (result, error) =
-                                              await _authService
-                                                  .signInWithEmailAndPassword(
-                                            _emailController.text,
-                                            _passwordController.text,
-                                          );
+                                          try {
+                                            final (result, error) =
+                                                await _authService
+                                                    .signInWithEmailAndPassword(
+                                              _emailController.text,
+                                              _passwordController.text,
+                                            );
 
-                                          setState(() => _isLoading = false);
-
-                                          if (error != null) {
-                                            _showErrorDialog(error);
-                                          } else if (result != null) {
+                                            // Check if widget is still mounted before updating state
                                             if (!mounted) return;
 
-                                            // Get user role from Firestore
-                                            final userDoc =
-                                                await FirebaseFirestore.instance
-                                                    .collection('users')
-                                                    .doc(result.user!.uid)
-                                                    .get();
+                                            setState(() => _isLoading = false);
 
-                                            if (!mounted) return;
+                                            if (error != null) {
+                                              if (!mounted) return;
+                                              _showErrorDialog(error);
+                                            } else if (result != null) {
+                                              if (!mounted) return;
 
-                                            final role = userDoc.data()?['role']
-                                                as String;
+                                              // Get user role from Firestore
+                                              final userDoc =
+                                                  await FirebaseFirestore
+                                                      .instance
+                                                      .collection('users')
+                                                      .doc(result.user!.uid)
+                                                      .get();
 
-                                            // Role-based navigation
-                                            switch (role) {
-                                              case 'admin':
-                                                Navigator.pushReplacementNamed(
-                                                    context, '/admin');
-                                                break;
-                                              case 'coordinator':
-                                                Navigator.pushReplacementNamed(
-                                                    context, '/coordinator');
-                                                break;
-                                              case 'volunteer':
-                                                Navigator.pushReplacementNamed(
-                                                    context, '/volunteer');
-                                                break;
-                                              default:
-                                                Navigator.pushReplacementNamed(
-                                                    context, '/home');
+                                              if (!mounted) return;
+
+                                              final role = userDoc
+                                                  .data()?['role'] as String;
+
+                                              // Role-based navigation
+                                              switch (role) {
+                                                case 'admin':
+                                                  Navigator
+                                                      .pushReplacementNamed(
+                                                          context, '/admin');
+                                                  break;
+                                                case 'coordinator':
+                                                  Navigator
+                                                      .pushReplacementNamed(
+                                                          context,
+                                                          '/coordinator');
+                                                  break;
+                                                case 'volunteer':
+                                                  Navigator
+                                                      .pushReplacementNamed(
+                                                          context,
+                                                          '/volunteer');
+                                                  break;
+                                                default:
+                                                  Navigator
+                                                      .pushReplacementNamed(
+                                                          context, '/home');
+                                              }
                                             }
+                                          } catch (e) {
+                                            if (!mounted) return;
+                                            setState(() => _isLoading = false);
+                                            _showErrorDialog(
+                                                'Error: ${e.toString()}');
                                           }
                                         }
                                       },
@@ -298,58 +316,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                             fontWeight: FontWeight.bold),
                                       ),
                               ),
-                              const SizedBox(height: 16),
-                              Row(
-                                children: [
-                                  Expanded(
-                                      child: Divider(
-                                          color: AppColors.secondaryYellow)),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16),
-                                    child: Text(
-                                      'or',
-                                      style: TextStyle(
-                                          color: AppColors.secondaryYellow),
-                                    ),
-                                  ),
-                                  Expanded(
-                                      child: Divider(
-                                          color: AppColors.secondaryYellow)),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              OutlinedButton.icon(
-                                onPressed: () async {
-                                  setState(() => _isLoading = true);
-
-                                  final (result, error) =
-                                      await _authService.signInWithGoogle();
-
-                                  setState(() => _isLoading = false);
-
-                                  if (error != null) {
-                                    _showErrorDialog(error);
-                                  } else if (result != null) {
-                                    if (!mounted) return;
-                                    Navigator.pushReplacementNamed(
-                                        context, '/home');
-                                  }
-                                },
-                                style: OutlinedButton.styleFrom(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 16),
-                                  side: BorderSide(
-                                      color: AppColors.secondaryYellow),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                icon: Image.asset('assets/google_logo.png',
-                                    height: 24),
-                                label: const Text('Sign in with Google'),
-                              ),
-                              const SizedBox(height: 24),
+                              const SizedBox(height: 8),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [

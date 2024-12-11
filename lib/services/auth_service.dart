@@ -21,7 +21,7 @@ class AuthService {
       );
 
       if (userCredential.user != null) {
-        // Check if user is approved
+        // Check if user is disabled
         final userDoc = await _firestore
             .collection('users')
             .doc(userCredential.user!.uid)
@@ -30,6 +30,12 @@ class AuthService {
         if (!userDoc.exists) {
           await _auth.signOut();
           return (null, 'User data not found');
+        }
+
+        final isDisabled = userDoc.data()?['isDisabled'] ?? false;
+        if (isDisabled) {
+          await _auth.signOut();
+          return (null, 'Your account has been disabled. Please contact admin for support.');
         }
 
         final isApproved = userDoc.data()?['isApproved'] ?? false;
@@ -56,7 +62,17 @@ class AuthService {
 
   // Register with email and password
   Future<(UserCredential?, String?)> registerWithEmailAndPassword(
-      String email, String password, String role) async {
+    String email,
+    String password,
+    String role, {
+    required String fullName,
+    required String address,
+    required int age,
+    required String sex,
+    required String bloodGroup,
+    required String phoneNumber,
+    required String skills,
+  }) async {
     try {
       final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
@@ -64,14 +80,21 @@ class AuthService {
       );
 
       if (userCredential.user != null) {
-        // Create user document in Firestore
+        // Create user document in Firestore with additional fields
         await _firestore.collection('users').doc(userCredential.user!.uid).set({
           'uid': userCredential.user!.uid,
           'email': email,
           'role': role.toLowerCase(),
-          'isApproved':
-              role.toLowerCase() == 'commoner', // Auto-approve commoners
+          'isApproved': role.toLowerCase() == 'commoner',
           'createdAt': FieldValue.serverTimestamp(),
+          // New fields
+          'fullName': fullName,
+          'address': address,
+          'age': age,
+          'sex': sex,
+          'bloodGroup': bloodGroup,
+          'phoneNumber': phoneNumber,
+          'skills': skills,
         });
 
         // Sign out the user after registration
