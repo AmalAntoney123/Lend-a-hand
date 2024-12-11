@@ -173,6 +173,7 @@ class _DonateScreenState extends State<DonateScreen> {
     final startDate = (donation['startDate'] as Timestamp).toDate();
     final endDate = (donation['endDate'] as Timestamp).toDate();
     final daysLeft = endDate.difference(now).inDays;
+    final isBloodDonation = donation['isBloodDonation'] as bool? ?? false;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -180,8 +181,12 @@ class _DonateScreenState extends State<DonateScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ListTile(
+            leading: Icon(
+              isBloodDonation ? Icons.bloodtype : Icons.volunteer_activism,
+              color: isBloodDonation ? Colors.red : null,
+            ),
             title: Text(
-              donation['title'],
+              donation['title'] ?? 'Untitled Donation',
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
@@ -211,56 +216,93 @@ class _DonateScreenState extends State<DonateScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Items Needed:',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: (donation['acceptedItems'] as List<dynamic>)
-                        .map((item) => Chip(
-                              label: Text(item),
-                              backgroundColor: Theme.of(context)
-                                  .colorScheme
-                                  .primaryContainer,
-                              labelStyle: TextStyle(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onPrimaryContainer,
-                              ),
-                            ))
-                        .toList(),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () => _showItemDonationDialog(
-                              context, donationId, donation),
-                          icon: const Icon(Icons.inventory),
-                          label: const Text('Donate Items'),
+                  if (isBloodDonation) ...[
+                    const Text(
+                      'Required Blood Groups:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children:
+                          (donation['requiredBloodGroups'] as List<dynamic>?)
+                                  ?.map((group) => Chip(
+                                        label: Text(group.toString()),
+                                        backgroundColor: Colors.red[100],
+                                        labelStyle:
+                                            const TextStyle(color: Colors.red),
+                                      ))
+                                  .toList() ??
+                              [],
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () => _showBloodDonationInterestDialog(
+                            context, donationId),
+                        icon: const Icon(Icons.favorite),
+                        label: const Text('Express Interest in Donating'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
                         ),
                       ),
-                      if (donation['acceptsMoney']) ...[
-                        const SizedBox(width: 8),
+                    ),
+                  ] else ...[
+                    const Text(
+                      'Items Needed:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: (donation['acceptedItems'] as List<dynamic>?)
+                              ?.map((item) => Chip(
+                                    label: Text(item.toString()),
+                                    backgroundColor: Theme.of(context)
+                                        .colorScheme
+                                        .primaryContainer,
+                                    labelStyle: TextStyle(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onPrimaryContainer,
+                                    ),
+                                  ))
+                              .toList() ??
+                          [],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
                         Expanded(
                           child: ElevatedButton.icon(
-                            onPressed: () =>
-                                _showMoneyDonationDialog(context, donationId),
-                            icon: const Icon(Icons.attach_money),
-                            label: const Text('Donate Money'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  Theme.of(context).colorScheme.secondary,
-                            ),
+                            onPressed: () => _showItemDonationDialog(
+                                context, donationId, donation),
+                            icon: const Icon(Icons.inventory),
+                            label: const Text('Donate Items'),
                           ),
                         ),
+                        if (donation['acceptsMoney'] as bool? ?? false) ...[
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () =>
+                                  _showMoneyDonationDialog(context, donationId),
+                              icon: const Icon(Icons.attach_money),
+                              label: const Text('Donate Money'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    Theme.of(context).colorScheme.secondary,
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
-                  ),
+                    ),
+                  ],
                   const SizedBox(height: 16),
                 ],
               ),
@@ -590,6 +632,83 @@ class _DonateScreenState extends State<DonateScreen> {
               ),
             );
           },
+        );
+      },
+    );
+  }
+
+  void _showBloodDonationInterestDialog(
+      BuildContext context, String donationId) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please sign in to express interest')),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Express Interest in Blood Donation'),
+          content: const Text(
+            'By expressing interest, you agree to be contacted by our coordinator '
+            'to arrange the blood donation. They will contact you using your registered '
+            'phone number or email.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  await FirebaseFirestore.instance
+                      .collection('donations')
+                      .doc(donationId)
+                      .update({
+                    'interestedDonors': FieldValue.arrayUnion([
+                      {
+                        'userId': currentUser.uid,
+                        'name': currentUser.displayName,
+                        'email': currentUser.email,
+                        'date': Timestamp.now(),
+                      }
+                    ]),
+                  });
+
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Thank you for your interest! Our coordinator will contact you soon.',
+                        ),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Confirm Interest'),
+            ),
+          ],
         );
       },
     );

@@ -40,13 +40,23 @@ class VolunteerDonateScreen extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           itemCount: donations.length,
           itemBuilder: (context, index) {
-            final donation = donations[index].data() as Map<String, dynamic>;
+            final donationData =
+                donations[index].data() as Map<String, dynamic>;
             final now = DateTime.now();
-            final startDate = (donation['startDate'] as Timestamp).toDate();
-            final endDate = (donation['endDate'] as Timestamp).toDate();
+            final startDate = (donationData['startDate'] as Timestamp).toDate();
+            final endDate = (donationData['endDate'] as Timestamp).toDate();
             final daysLeft = endDate.difference(now).inDays;
             final hasStarted = startDate.isBefore(now);
             final isActive = endDate.isAfter(now);
+            final isBloodDonation =
+                donationData['isBloodDonation'] as bool? ?? false;
+            final acceptsMoney = donationData['acceptsMoney'] as bool? ?? false;
+            final title =
+                donationData['title'] as String? ?? 'Untitled Donation';
+            final requiredBloodGroups =
+                donationData['requiredBloodGroups'] as List<dynamic>? ?? [];
+            final acceptedItems =
+                donationData['acceptedItems'] as List<dynamic>? ?? [];
 
             return Card(
               margin: const EdgeInsets.only(bottom: 16),
@@ -54,8 +64,14 @@ class VolunteerDonateScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   ListTile(
+                    leading: Icon(
+                      isBloodDonation
+                          ? Icons.bloodtype
+                          : Icons.volunteer_activism,
+                      color: isBloodDonation ? Colors.red : null,
+                    ),
                     title: Text(
-                      donation['title'],
+                      title,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
@@ -100,9 +116,10 @@ class VolunteerDonateScreen extends StatelessWidget {
                           onPressed: () => Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => VolunteerDonationDetailsScreen(
+                              builder: (context) =>
+                                  VolunteerDonationDetailsScreen(
                                 donationId: donations[index].id,
-                                donation: donation,
+                                donation: donationData,
                               ),
                             ),
                           ),
@@ -115,41 +132,63 @@ class VolunteerDonateScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Accepted Items:',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: (donation['acceptedItems'] as List<dynamic>)
-                              .map((item) => Chip(
-                                    label: Text(item),
-                                    backgroundColor: Theme.of(context)
-                                        .colorScheme
-                                        .primaryContainer,
-                                    labelStyle: TextStyle(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onPrimaryContainer,
-                                    ),
-                                  ))
-                              .toList(),
-                        ),
-                        if (donation['acceptsMoney'])
-                          const Padding(
-                            padding: EdgeInsets.only(top: 8),
-                            child: Text(
-                              '✓ Accepts money donations',
-                              style: TextStyle(
-                                color: Colors.green,
-                                fontWeight: FontWeight.bold,
-                              ),
+                        if (isBloodDonation) ...[
+                          const Text(
+                            'Required Blood Groups:',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: requiredBloodGroups
+                                .map((group) => Chip(
+                                      label: Text(group.toString()),
+                                      backgroundColor: Colors.red[100],
+                                      labelStyle:
+                                          const TextStyle(color: Colors.red),
+                                    ))
+                                .toList(),
+                          ),
+                        ] else ...[
+                          const Text(
+                            'Accepted Items:',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: acceptedItems
+                                .map((item) => Chip(
+                                      label: Text(item.toString()),
+                                      backgroundColor: Theme.of(context)
+                                          .colorScheme
+                                          .primaryContainer,
+                                      labelStyle: TextStyle(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onPrimaryContainer,
+                                      ),
+                                    ))
+                                .toList(),
+                          ),
+                          if (!isBloodDonation && acceptsMoney)
+                            const Padding(
+                              padding: EdgeInsets.only(top: 8),
+                              child: Text(
+                                '✓ Accepts money donations',
+                                style: TextStyle(
+                                  color: Colors.green,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                        ],
                       ],
                     ),
                   ),

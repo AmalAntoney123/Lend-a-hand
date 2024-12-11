@@ -7,9 +7,11 @@ class DonationService {
     required String title,
     required DateTime startDate,
     required DateTime endDate,
-    required List<String> acceptedItems,
+    List<String>? acceptedItems,
+    List<String>? requiredBloodGroups,
     required bool acceptsMoney,
     required List<String> assignedVolunteers,
+    bool isBloodDonation = false,
     String? status = 'active',
   }) async {
     try {
@@ -17,12 +19,15 @@ class DonationService {
         'title': title,
         'startDate': Timestamp.fromDate(startDate),
         'endDate': Timestamp.fromDate(endDate),
-        'acceptedItems': acceptedItems,
+        'acceptedItems': acceptedItems ?? [],
+        'requiredBloodGroups': requiredBloodGroups ?? [],
         'acceptsMoney': acceptsMoney,
         'createdAt': Timestamp.now(),
         'status': status,
         'moneyDonations': [],
         'itemDonations': [],
+        'bloodDonations': [],
+        'isBloodDonation': isBloodDonation,
         'assignedVolunteers': assignedVolunteers,
       });
     } catch (e) {

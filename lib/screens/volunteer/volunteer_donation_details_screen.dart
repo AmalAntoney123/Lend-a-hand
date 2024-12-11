@@ -177,6 +177,8 @@ class VolunteerDonationDetailsScreen extends StatelessWidget {
   }
 
   Widget _buildAcceptedItemsList(BuildContext context) {
+    final isBloodDonation = donation['isBloodDonation'] ?? false;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -189,14 +191,14 @@ class VolunteerDonationDetailsScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
-                Icons.inventory_2,
+                isBloodDonation ? Icons.bloodtype : Icons.inventory_2,
                 size: 20,
                 color: Theme.of(context).colorScheme.onSecondaryContainer,
               ),
             ),
             const SizedBox(width: 12),
             Text(
-              'Accepted Items',
+              isBloodDonation ? 'Required Blood Groups' : 'Accepted Items',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -207,21 +209,33 @@ class VolunteerDonationDetailsScreen extends StatelessWidget {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: (donation['acceptedItems'] as List<dynamic>).map((item) {
-            return Chip(
-              label: Text(item),
-              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-              labelStyle: TextStyle(
-                color: Theme.of(context).colorScheme.onPrimaryContainer,
-              ),
-            );
-          }).toList(),
+          children: isBloodDonation
+              ? (donation['requiredBloodGroups'] as List<dynamic>)
+                  .map((group) => Chip(
+                        label: Text(group),
+                        backgroundColor: Colors.red[100],
+                        labelStyle: const TextStyle(color: Colors.red),
+                      ))
+                  .toList()
+              : (donation['acceptedItems'] as List<dynamic>)
+                  .map((item) => Chip(
+                        label: Text(item),
+                        backgroundColor:
+                            Theme.of(context).colorScheme.primaryContainer,
+                        labelStyle: TextStyle(
+                          color:
+                              Theme.of(context).colorScheme.onPrimaryContainer,
+                        ),
+                      ))
+                  .toList(),
         ),
       ],
     );
   }
 
   Widget _buildDonationsList(BuildContext context) {
+    final isBloodDonation = donation['isBloodDonation'] as bool? ?? false;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -234,14 +248,16 @@ class VolunteerDonationDetailsScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
-                Icons.list_alt,
+                isBloodDonation ? Icons.bloodtype : Icons.list_alt,
                 size: 20,
                 color: Theme.of(context).colorScheme.onSecondaryContainer,
               ),
             ),
             const SizedBox(width: 12),
             Text(
-              'Received Donations',
+              isBloodDonation
+                  ? 'Interested Blood Donors'
+                  : 'Received Donations',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -264,299 +280,578 @@ class VolunteerDonationDetailsScreen extends StatelessWidget {
             }
 
             final data = snapshot.data!.data() as Map<String, dynamic>;
-            final moneyDonations =
-                data['moneyDonations'] as List<dynamic>? ?? [];
-            final itemDonations = data['itemDonations'] as List<dynamic>? ?? [];
 
-            if (moneyDonations.isEmpty && itemDonations.isEmpty) {
-              return Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceVariant,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Row(
+            if (isBloodDonation) {
+              final interestedDonors =
+                  (data['interestedDonors'] as List<dynamic>?) ?? [];
+
+              if (interestedDonors.isEmpty) {
+                return Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceVariant,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.info_outline),
+                      SizedBox(width: 12),
+                      Text('No interested donors yet'),
+                    ],
+                  ),
+                );
+              }
+
+              return ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: interestedDonors.length,
+                itemBuilder: (context, index) {
+                  final donor = interestedDonors[index] as Map<String, dynamic>;
+                  return Card(
+                    elevation: 1,
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.bloodtype,
+                          color:
+                              Theme.of(context).colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                      title: Text(donor['name'] ?? 'Anonymous'),
+                      subtitle: Text(
+                        DateFormat('MMM dd, yyyy').format(
+                          (donor['date'] as Timestamp).toDate(),
+                        ),
+                      ),
+                      trailing: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _getStatusColor(donor['status'] ?? 'Pending')
+                              .withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          donor['status'] ?? 'Pending',
+                          style: TextStyle(
+                            color:
+                                _getStatusColor(donor['status'] ?? 'Pending'),
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      onTap: () => _showDonorDetailsDialog(context, donor),
+                    ),
+                  );
+                },
+              );
+            } else {
+              final moneyDonations =
+                  data['moneyDonations'] as List<dynamic>? ?? [];
+              final itemDonations =
+                  data['itemDonations'] as List<dynamic>? ?? [];
+
+              if (moneyDonations.isEmpty && itemDonations.isEmpty) {
+                return Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceVariant,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.info_outline),
+                      SizedBox(width: 12),
+                      Text('No donations received yet'),
+                    ],
+                  ),
+                );
+              }
+
+              // Calculate total money received
+              final totalMoney = moneyDonations.fold<double>(
+                0,
+                (sum, donation) => sum + (donation['amount'] as num).toDouble(),
+              );
+
+              return DefaultTabController(
+                length: 2,
+                child: Column(
                   children: [
-                    Icon(Icons.info_outline),
-                    SizedBox(width: 12),
-                    Text('No donations received yet'),
+                    TabBar(
+                      tabs: const [
+                        Tab(text: 'Money Donations'),
+                        Tab(text: 'Item Donations'),
+                      ],
+                      labelColor: Theme.of(context).colorScheme.primary,
+                      unselectedLabelColor:
+                          Theme.of(context).colorScheme.onSurface,
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      height: 400,
+                      child: TabBarView(
+                        children: [
+                          // Money Donations Tab
+                          Column(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .primaryContainer,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'Total Received:',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium,
+                                    ),
+                                    Text(
+                                      '₹${totalMoney.toStringAsFixed(2)}',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium
+                                          ?.copyWith(
+                                              fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Expanded(
+                                child: ListView.builder(
+                                  itemCount: moneyDonations.length,
+                                  itemBuilder: (context, index) {
+                                    final donation = moneyDonations[index];
+                                    return Card(
+                                      elevation: 1,
+                                      margin: const EdgeInsets.only(bottom: 8),
+                                      child: ListTile(
+                                        leading: Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .primaryContainer,
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                          child: Icon(Icons.attach_money),
+                                        ),
+                                        title: Text('₹${donation['amount']}'),
+                                        subtitle: Text(donation['donorName']),
+                                        trailing: Text(
+                                          DateFormat('MM/dd/yyyy').format(
+                                              (donation['date'] as Timestamp)
+                                                  .toDate()),
+                                        ),
+                                        onTap: () => _showDonationDetails(
+                                            context, donation, 'money'),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                          // Item Donations Tab
+                          ListView.builder(
+                            itemCount: itemDonations.length,
+                            itemBuilder: (context, index) {
+                              final donation = itemDonations[index];
+                              return Card(
+                                elevation: 1,
+                                margin: const EdgeInsets.only(bottom: 8),
+                                child: ListTile(
+                                  leading: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primaryContainer,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Icon(Icons.inventory),
+                                  ),
+                                  title: Text(donation['item']),
+                                  subtitle: Text(donation['donorName']),
+                                  trailing: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: _getStatusColor(
+                                              donation['status'] ?? 'Pending')
+                                          .withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      donation['status'] ?? 'Pending',
+                                      style: TextStyle(
+                                        color: _getStatusColor(
+                                            donation['status'] ?? 'Pending'),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  onTap: () => _showDonationDetails(
+                                      context, donation, 'item'),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               );
             }
-
-            // Calculate total money received
-            final totalMoney = moneyDonations.fold<double>(
-              0,
-              (sum, donation) => sum + (donation['amount'] as num).toDouble(),
-            );
-
-            return DefaultTabController(
-              length: 2,
-              child: Column(
-                children: [
-                  TabBar(
-                    tabs: const [
-                      Tab(text: 'Money Donations'),
-                      Tab(text: 'Item Donations'),
-                    ],
-                    labelColor: Theme.of(context).colorScheme.primary,
-                    unselectedLabelColor:
-                        Theme.of(context).colorScheme.onSurface,
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    height: 400, // Adjust this height as needed
-                    child: TabBarView(
-                      children: [
-                        // Money Donations Tab
-                        Column(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .primaryContainer,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Total Received:',
-                                    style:
-                                        Theme.of(context).textTheme.titleMedium,
-                                  ),
-                                  Text(
-                                    '₹${totalMoney.toStringAsFixed(2)}',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(fontWeight: FontWeight.bold),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Expanded(
-                              child: ListView.builder(
-                                itemCount: moneyDonations.length,
-                                itemBuilder: (context, index) {
-                                  final donation = moneyDonations[index];
-                                  return Card(
-                                    elevation: 1,
-                                    margin: const EdgeInsets.only(bottom: 8),
-                                    child: ListTile(
-                                      leading: Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .primaryContainer,
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                        ),
-                                        child: Icon(
-                                          Icons.attach_money,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onPrimaryContainer,
-                                        ),
-                                      ),
-                                      title: Text('₹${donation['amount']}'),
-                                      subtitle: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                              'Donor: ${donation['donorName']}'),
-                                          Text(
-                                              'Payment ID: ${donation['paymentId']}'),
-                                        ],
-                                      ),
-                                      trailing: Text(
-                                        DateFormat('MM/dd/yyyy').format(
-                                            (donation['date'] as Timestamp)
-                                                .toDate()),
-                                      ),
-                                      isThreeLine: true,
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                        // Item Donations Tab
-                        ListView.builder(
-                          itemCount: itemDonations.length,
-                          itemBuilder: (context, index) {
-                            final donation = itemDonations[index];
-                            return Card(
-                              elevation: 1,
-                              margin: const EdgeInsets.only(bottom: 8),
-                              child: ExpansionTile(
-                                leading: Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .primaryContainer,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Icon(
-                                    Icons.inventory,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onPrimaryContainer,
-                                  ),
-                                ),
-                                title: Text(donation['item']),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('Donor: ${donation['donorName']}'),
-                                    Text(
-                                        'Description: ${donation['description']}'),
-                                    Text(
-                                      'Status: ${donation['status'] ?? 'Pending'}',
-                                      style: TextStyle(
-                                        color: _getStatusColor(
-                                            donation['status'] ?? 'Pending'),
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                trailing: Text(
-                                  DateFormat('MM/dd/yyyy').format(
-                                      (donation['date'] as Timestamp).toDate()),
-                                ),
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.all(16),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        // Donor Contact Details
-                                        if (donation['donorId'] != null) ...[
-                                          FutureBuilder<DocumentSnapshot>(
-                                            future: FirebaseFirestore.instance
-                                                .collection('users')
-                                                .doc(donation['donorId'])
-                                                .get(),
-                                            builder: (context, snapshot) {
-                                              if (snapshot.hasData &&
-                                                  snapshot.data!.exists) {
-                                                final userData =
-                                                    snapshot.data!.data()
-                                                        as Map<String, dynamic>;
-                                                final phoneNumber =
-                                                    userData['phoneNumber'];
-                                                if (phoneNumber != null &&
-                                                    phoneNumber.isNotEmpty) {
-                                                  return ListTile(
-                                                    leading:
-                                                        const Icon(Icons.phone),
-                                                    title: InkWell(
-                                                      onTap: () => _launchCall(
-                                                          phoneNumber),
-                                                      child: Text(
-                                                        phoneNumber,
-                                                        style: TextStyle(
-                                                          color:
-                                                              Theme.of(context)
-                                                                  .colorScheme
-                                                                  .primary,
-                                                          decoration:
-                                                              TextDecoration
-                                                                  .underline,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  );
-                                                }
-                                              }
-                                              return const SizedBox.shrink();
-                                            },
-                                          ),
-                                        ],
-                                        const SizedBox(height: 16),
-                                        // Status Update Section
-                                        Text(
-                                          'Update Status',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .titleMedium,
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Wrap(
-                                          spacing: 8,
-                                          children: [
-                                            _buildStatusChip(
-                                              context,
-                                              donation,
-                                              'Pending',
-                                              Icons.hourglass_empty,
-                                            ),
-                                            _buildStatusChip(
-                                              context,
-                                              donation,
-                                              'Confirmed',
-                                              Icons.check_circle_outline,
-                                            ),
-                                            _buildStatusChip(
-                                              context,
-                                              donation,
-                                              'Picked Up',
-                                              Icons.local_shipping_outlined,
-                                            ),
-                                            _buildStatusChip(
-                                              context,
-                                              donation,
-                                              'Delivered',
-                                              Icons.inventory_2,
-                                            ),
-                                          ],
-                                        ),
-                                        if (donation['notes'] != null) ...[
-                                          const SizedBox(height: 16),
-                                          Text(
-                                            'Notes:',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .titleSmall,
-                                          ),
-                                          Text(donation['notes']),
-                                        ],
-                                        const SizedBox(height: 16),
-                                        ElevatedButton.icon(
-                                          onPressed: () =>
-                                              _addNote(context, donation),
-                                          icon: const Icon(Icons.note_add),
-                                          label: const Text('Add Note'),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
           },
         ),
       ],
     );
+  }
+
+  void _showDonationDetails(
+      BuildContext context, Map<String, dynamic> donation, String type) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (context, scrollController) {
+            return SingleChildScrollView(
+              controller: scrollController,
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 20),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.outlineVariant,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        Icon(
+                          type == 'money'
+                              ? Icons.payments_outlined
+                              : Icons.inventory_2_outlined,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 28,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          type == 'money'
+                              ? 'Money Donation Details'
+                              : 'Item Donation Details',
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    // Status Card (for item donations)
+                    if (type == 'item') ...[
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color:
+                                _getStatusColor(donation['status'] ?? 'Pending')
+                                    .withOpacity(0.5),
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              _getStatusIcon(donation['status'] ?? 'Pending'),
+                              color: _getStatusColor(
+                                  donation['status'] ?? 'Pending'),
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Status',
+                                  style: Theme.of(context).textTheme.bodyMedium,
+                                ),
+                                Text(
+                                  donation['status'] ?? 'Pending',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(
+                                        color: _getStatusColor(
+                                            donation['status'] ?? 'Pending'),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                ),
+                              ],
+                            ),
+                            const Spacer(),
+                            if (type == 'item') ...[
+                              PopupMenuButton<String>(
+                                icon: const Icon(Icons.more_vert),
+                                onSelected: (String status) {
+                                  _updateDonationStatus(donation, status);
+                                  Navigator.pop(context);
+                                },
+                                itemBuilder: (BuildContext context) => [
+                                  'Pending',
+                                  'Confirmed',
+                                  'Picked Up',
+                                  'Delivered',
+                                ].map((String status) {
+                                  return PopupMenuItem<String>(
+                                    value: status,
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          _getStatusIcon(status),
+                                          color: _getStatusColor(status),
+                                          size: 20,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(status),
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                    // Donor Information
+                    Text(
+                      'Donor Information',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildDetailRow(
+                      context,
+                      'Name',
+                      donation['donorName'],
+                      Icons.badge_outlined,
+                    ),
+                    if (donation['donorId'] != null) ...[
+                      FutureBuilder<DocumentSnapshot>(
+                        future: FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(donation['donorId'])
+                            .get(),
+                        builder: (context, snapshot) {
+                          if (snapshot.hasData && snapshot.data!.exists) {
+                            final userData =
+                                snapshot.data!.data() as Map<String, dynamic>;
+                            return Column(
+                              children: [
+                                if (userData['phoneNumber'] != null)
+                                  _buildDetailRow(
+                                    context,
+                                    'Phone',
+                                    userData['phoneNumber'],
+                                    Icons.phone_outlined,
+                                    isPhone: true,
+                                  ),
+                                if (userData['email'] != null)
+                                  _buildDetailRow(
+                                    context,
+                                    'Email',
+                                    userData['email'],
+                                    Icons.email_outlined,
+                                  ),
+                              ],
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                    ],
+                    const Divider(height: 32),
+                    // Donation Details
+                    Text(
+                      'Donation Details',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (type == 'money') ...[
+                      _buildDetailRow(
+                        context,
+                        'Amount',
+                        '₹${donation['amount']}',
+                        Icons.currency_rupee,
+                      ),
+                      _buildDetailRow(
+                        context,
+                        'Payment ID',
+                        donation['paymentId'],
+                        Icons.receipt_long_outlined,
+                      ),
+                    ] else ...[
+                      _buildDetailRow(
+                        context,
+                        'Item',
+                        donation['item'],
+                        Icons.category_outlined,
+                      ),
+                      _buildDetailRow(
+                        context,
+                        'Description',
+                        donation['description'],
+                        Icons.description_outlined,
+                      ),
+                    ],
+                    _buildDetailRow(
+                      context,
+                      'Date',
+                      DateFormat('MMM dd, yyyy')
+                          .format((donation['date'] as Timestamp).toDate()),
+                      Icons.calendar_today_outlined,
+                    ),
+                    if (type == 'item') ...[
+                      const Divider(height: 32),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Notes',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                          TextButton.icon(
+                            onPressed: () => _addNote(context, donation),
+                            icon: const Icon(Icons.add),
+                            label: const Text('Add Note'),
+                          ),
+                        ],
+                      ),
+                      if (donation['notes'] != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          donation['notes'],
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
+                      ],
+                    ],
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildDetailRow(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon, {
+    bool isPhone = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 20,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(width: 12),
+          Text(
+            '$label:',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: isPhone
+                ? InkWell(
+                    onTap: () => _launchCall(value),
+                    child: Text(
+                      value,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  )
+                : Text(value),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _getStatusIcon(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return Icons.pending_outlined;
+      case 'confirmed':
+        return Icons.check_circle_outline;
+      case 'picked up':
+        return Icons.local_shipping_outlined;
+      case 'delivered':
+        return Icons.done_all;
+      default:
+        return Icons.info_outline;
+    }
   }
 
   Color _getStatusColor(String status) {
@@ -572,33 +867,6 @@ class VolunteerDonationDetailsScreen extends StatelessWidget {
       default:
         return Colors.grey;
     }
-  }
-
-  Widget _buildStatusChip(
-    BuildContext context,
-    Map<String, dynamic> donation,
-    String status,
-    IconData icon,
-  ) {
-    final isCurrentStatus = donation['status'] == status;
-    return FilterChip(
-      selected: isCurrentStatus,
-      label: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: 16,
-            color: isCurrentStatus ? Colors.white : Colors.grey,
-          ),
-          const SizedBox(width: 4),
-          Text(status),
-        ],
-      ),
-      onSelected: (bool selected) {
-        _updateDonationStatus(donation, status);
-      },
-    );
   }
 
   Future<void> _updateDonationStatus(
@@ -700,6 +968,257 @@ class VolunteerDonationDetailsScreen extends StatelessWidget {
       }
     } catch (e) {
       print('Error launching phone call: $e');
+    }
+  }
+
+  void _showDonorDetailsDialog(
+      BuildContext context, Map<String, dynamic> donor) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (context, scrollController) {
+            return SingleChildScrollView(
+              controller: scrollController,
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 20),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.outlineVariant,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.person_outline,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 28,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Donor Details',
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    FutureBuilder<DocumentSnapshot>(
+                      future: FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(donor['userId'])
+                          .get(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                              child: CircularProgressIndicator());
+                        }
+
+                        if (!snapshot.hasData || !snapshot.data!.exists) {
+                          return const Text('User details not found');
+                        }
+
+                        final userData =
+                            snapshot.data!.data() as Map<String, dynamic>;
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Status Card
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: _getStatusColor(
+                                          donor['status'] ?? 'Pending')
+                                      .withOpacity(0.5),
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    _getStatusIcon(
+                                        donor['status'] ?? 'Pending'),
+                                    color: _getStatusColor(
+                                        donor['status'] ?? 'Pending'),
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Status',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium,
+                                      ),
+                                      Text(
+                                        donor['status'] ?? 'Pending',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(
+                                              color: _getStatusColor(
+                                                  donor['status'] ?? 'Pending'),
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                  const Spacer(),
+                                  PopupMenuButton<String>(
+                                    icon: const Icon(Icons.more_vert),
+                                    onSelected: (String status) {
+                                      _updateDonorStatus(donor, status);
+                                      Navigator.pop(context);
+                                    },
+                                    itemBuilder: (BuildContext context) => [
+                                      'Pending',
+                                      'Confirmed',
+                                      'Completed',
+                                      'Cancelled'
+                                    ].map((String status) {
+                                      return PopupMenuItem<String>(
+                                        value: status,
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              _getStatusIcon(status),
+                                              color: _getStatusColor(status),
+                                              size: 20,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(status),
+                                          ],
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            // User Details
+                            Text(
+                              'Personal Information',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                            const SizedBox(height: 12),
+                            _buildDetailRow(
+                              context,
+                              'Name',
+                              userData['fullName'] ?? 'N/A',
+                              Icons.person_outline,
+                            ),
+                            if (userData['phoneNumber'] != null)
+                              _buildDetailRow(
+                                context,
+                                'Phone',
+                                userData['phoneNumber'],
+                                Icons.phone_outlined,
+                                isPhone: true,
+                              ),
+                            if (userData['email'] != null)
+                              _buildDetailRow(
+                                context,
+                                'Email',
+                                userData['email'],
+                                Icons.email_outlined,
+                              ),
+                            if (userData['bloodGroup'] != null)
+                              _buildDetailRow(
+                                context,
+                                'Blood Group',
+                                userData['bloodGroup'],
+                                Icons.bloodtype_outlined,
+                              ),
+                            const Divider(height: 32),
+                            // Donation Date
+                            Text(
+                              'Donation Information',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                            const SizedBox(height: 12),
+                            _buildDetailRow(
+                              context,
+                              'Registered Date',
+                              DateFormat('MMM dd, yyyy').format(
+                                (donor['date'] as Timestamp).toDate(),
+                              ),
+                              Icons.calendar_today_outlined,
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _updateDonorStatus(
+      Map<String, dynamic> donor, String newStatus) async {
+    try {
+      final donationRef =
+          FirebaseFirestore.instance.collection('donations').doc(donationId);
+
+      await FirebaseFirestore.instance.runTransaction((transaction) async {
+        final donationDoc = await transaction.get(donationRef);
+        final interestedDonors =
+            List<dynamic>.from(donationDoc.get('interestedDonors'));
+
+        final index = interestedDonors.indexWhere((d) =>
+            d['userId'] == donor['userId'] && d['date'] == donor['date']);
+
+        if (index != -1) {
+          interestedDonors[index]['status'] = newStatus;
+          transaction
+              .update(donationRef, {'interestedDonors': interestedDonors});
+        }
+      });
+    } catch (e) {
+      print('Error updating donor status: $e');
     }
   }
 }
