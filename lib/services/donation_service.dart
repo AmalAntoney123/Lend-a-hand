@@ -65,7 +65,6 @@ class DonationService {
     return _firestore
         .collection('donations')
         .where('status', isEqualTo: 'active')
-        .orderBy('createdAt', descending: true)
         .snapshots();
   }
 

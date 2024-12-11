@@ -32,10 +32,22 @@ class AuthService {
           return (null, 'User data not found');
         }
 
+        // Update display name if not set
+        if (userCredential.user!.displayName == null ||
+            userCredential.user!.displayName!.isEmpty) {
+          final fullName = userDoc.data()?['fullName'];
+          if (fullName != null) {
+            await userCredential.user!.updateDisplayName(fullName);
+          }
+        }
+
         final isDisabled = userDoc.data()?['isDisabled'] ?? false;
         if (isDisabled) {
           await _auth.signOut();
-          return (null, 'Your account has been disabled. Please contact admin for support.');
+          return (
+            null,
+            'Your account has been disabled. Please contact admin for support.'
+          );
         }
 
         final isApproved = userDoc.data()?['isApproved'] ?? false;
@@ -87,7 +99,6 @@ class AuthService {
           'role': role.toLowerCase(),
           'isApproved': role.toLowerCase() == 'commoner',
           'createdAt': FieldValue.serverTimestamp(),
-          // New fields
           'fullName': fullName,
           'address': address,
           'age': age,
@@ -150,6 +161,24 @@ class AuthService {
       );
 
       final userCredential = await _auth.signInWithCredential(credential);
+
+      // Check if user exists in Firestore
+      final userDoc = await _firestore
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .get();
+
+      if (userDoc.exists) {
+        // Update display name if needed
+        if (userCredential.user!.displayName == null ||
+            userCredential.user!.displayName!.isEmpty) {
+          final fullName = userDoc.data()?['fullName'];
+          if (fullName != null) {
+            await userCredential.user!.updateDisplayName(fullName);
+          }
+        }
+      }
+
       return (userCredential, null);
     } on FirebaseAuthException catch (e) {
       return (null, 'Error signing in with Google: ${e.message}');
