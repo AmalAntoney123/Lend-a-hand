@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../services/donation_service.dart';
 
 class DonationDetailsScreen extends StatelessWidget {
@@ -636,7 +637,7 @@ class DonationDetailsScreen extends StatelessWidget {
                             return Card(
                               elevation: 1,
                               margin: const EdgeInsets.only(bottom: 8),
-                              child: ListTile(
+                              child: ExpansionTile(
                                 leading: Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
@@ -659,13 +660,177 @@ class DonationDetailsScreen extends StatelessWidget {
                                     Text('Donor: ${donation['donorName']}'),
                                     Text(
                                         'Description: ${donation['description']}'),
+                                    Text(
+                                      'Status: ${donation['status'] ?? 'Pending'}',
+                                      style: TextStyle(
+                                        color: _getStatusColor(
+                                            donation['status'] ?? 'Pending'),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   ],
                                 ),
                                 trailing: Text(
                                   DateFormat('MM/dd/yyyy').format(
                                       (donation['date'] as Timestamp).toDate()),
                                 ),
-                                isThreeLine: true,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        // Donor Contact Details
+                                        if (donation['donorId'] != null) ...[
+                                          FutureBuilder<DocumentSnapshot>(
+                                            future: FirebaseFirestore.instance
+                                                .collection('users')
+                                                .doc(donation['donorId'])
+                                                .get(),
+                                            builder: (context, snapshot) {
+                                              if (snapshot.hasData &&
+                                                  snapshot.data!.exists) {
+                                                final userData =
+                                                    snapshot.data!.data()
+                                                        as Map<String, dynamic>;
+                                                final phoneNumber =
+                                                    userData['phoneNumber'];
+                                                if (phoneNumber != null &&
+                                                    phoneNumber.isNotEmpty) {
+                                                  return ListTile(
+                                                    leading:
+                                                        const Icon(Icons.phone),
+                                                    title: InkWell(
+                                                      onTap: () => _launchCall(
+                                                          phoneNumber),
+                                                      child: Text(
+                                                        phoneNumber,
+                                                        style: TextStyle(
+                                                          color:
+                                                              Theme.of(context)
+                                                                  .colorScheme
+                                                                  .primary,
+                                                          decoration:
+                                                              TextDecoration
+                                                                  .underline,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  );
+                                                }
+                                              }
+                                              return const SizedBox.shrink();
+                                            },
+                                          ),
+                                        ],
+                                        const SizedBox(height: 16),
+                                        // Status Section
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              Icons.timeline,
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .primary,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              'Donation Status',
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .titleMedium
+                                                  ?.copyWith(
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Container(
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .surfaceVariant,
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              _buildStatusRow(
+                                                'Pending',
+                                                donation['status'] == 'Pending',
+                                                Icons.hourglass_empty,
+                                                Colors.orange,
+                                              ),
+                                              _buildStatusRow(
+                                                'Confirmed',
+                                                donation['status'] ==
+                                                    'Confirmed',
+                                                Icons.check_circle_outline,
+                                                Colors.blue,
+                                              ),
+                                              _buildStatusRow(
+                                                'Picked Up',
+                                                donation['status'] ==
+                                                    'Picked Up',
+                                                Icons.local_shipping_outlined,
+                                                Colors.purple,
+                                              ),
+                                              _buildStatusRow(
+                                                'Delivered',
+                                                donation['status'] ==
+                                                    'Delivered',
+                                                Icons.inventory_2,
+                                                Colors.green,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        if (donation['notes'] != null) ...[
+                                          const SizedBox(height: 16),
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                Icons.note,
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .primary,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                'Notes',
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .titleMedium
+                                                    ?.copyWith(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Container(
+                                            width: double.infinity,
+                                            padding: const EdgeInsets.all(12),
+                                            decoration: BoxDecoration(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .surfaceVariant,
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            child: Text(donation['notes']),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
                             );
                           },
@@ -680,5 +845,58 @@ class DonationDetailsScreen extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'Pending':
+        return Colors.orange;
+      case 'Confirmed':
+        return Colors.blue;
+      case 'Picked Up':
+        return Colors.purple;
+      case 'Delivered':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  Widget _buildStatusRow(
+      String status, bool isActive, IconData icon, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            color: isActive ? color : Colors.grey,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            status,
+            style: TextStyle(
+              color: isActive ? color : Colors.grey,
+              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _launchCall(String phoneNumber) async {
+    final Uri phoneUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber.replaceAll(' ', ''),
+    );
+    try {
+      if (!await launchUrl(phoneUri)) {
+        throw 'Could not launch $phoneUri';
+      }
+    } catch (e) {
+      print('Error launching phone call: $e');
+    }
   }
 }
