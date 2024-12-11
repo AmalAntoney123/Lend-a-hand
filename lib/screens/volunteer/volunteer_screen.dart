@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:lendahand/screens/volunteer/volunteer_donate_screen.dart';
 import '../settings/settings_screen.dart';
 import '../tabs/updates_screen.dart';
-import '../tabs/donate_screen.dart';
 
 class VolunteerScreen extends StatefulWidget {
   const VolunteerScreen({Key? key}) : super(key: key);
@@ -15,7 +15,7 @@ class _VolunteerScreenState extends State<VolunteerScreen> {
   final List<Widget> _screens = [
     const VolunteerHomeTab(),
     const UpdatesScreen(),
-    const DonateScreen(),
+    const VolunteerDonateScreen(),
   ];
 
   @override

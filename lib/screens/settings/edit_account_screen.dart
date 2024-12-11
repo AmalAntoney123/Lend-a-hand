@@ -51,7 +51,7 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
       _fullNameController.text = userData['fullName'] ?? '';
       _phoneNumberController.text = userData['phoneNumber'] ?? '';
       _addressController.text = userData['address'] ?? '';
-      _selectedBloodGroup = userData['bloodGroup'] ?? 'A+';
+      _selectedBloodGroup = userData['bloodGroup'] ?? _selectedBloodGroup;
       _skillsController.text = userData['skills'] ?? '';
     }
   }
@@ -351,7 +351,8 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _selectedBloodGroup,
+                value:
+                    _selectedBloodGroup.isNotEmpty ? _selectedBloodGroup : null,
                 decoration: const InputDecoration(
                   labelText: 'Blood Group',
                   prefixIcon: Icon(Icons.bloodtype),

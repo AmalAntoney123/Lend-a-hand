@@ -44,6 +44,7 @@ dependencies:
   geolocator: ^13.0.2
   weather_animation: ^1.1.1
   geocoding: ^3.0.0
+  intl: ^0.20.1
 
 dev_dependencies:
   flutter_test:

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:lendahand/screens/coordinator/coordinator_donate_screen.dart';
 import '../settings/settings_screen.dart';
 import '../tabs/updates_screen.dart';
 import '../tabs/donate_screen.dart';
+import 'volunteer_requests_screen.dart';
 
 class CoordinatorScreen extends StatefulWidget {
   const CoordinatorScreen({Key? key}) : super(key: key);
@@ -15,7 +17,8 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
   final List<Widget> _screens = [
     const CoordinatorHomeTab(),
     const UpdatesScreen(),
-    const DonateScreen(),
+    const CoordinatorDonateScreen(),
+    const VolunteerRequestsScreen(),
   ];
 
   @override
@@ -65,6 +68,10 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
             BottomNavigationBarItem(
               icon: Icon(Icons.volunteer_activism),
               label: 'Donate',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.group_add),
+              label: 'Volunteers',
             ),
           ],
         ),
