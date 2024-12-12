@@ -9,6 +9,7 @@ import '../../services/weather_service.dart';
 import '../settings/settings_screen.dart';
 import 'donation_details_screen.dart';
 import 'coordinator_donate_screen.dart';
+import 'update_approvals_screen.dart';
 
 class CoordinatorScreen extends StatefulWidget {
   const CoordinatorScreen({Key? key}) : super(key: key);
@@ -21,7 +22,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
   int _currentIndex = 0;
   final List<Widget> _screens = [
     const CoordinatorHomeTab(),
-    const UpdatesScreen(),
+    UpdateApprovalsScreen(),
     const CoordinatorDonateScreen(),
     const VolunteerRequestsScreen(),
   ];
@@ -218,7 +219,9 @@ class _CoordinatorHomeTabState extends State<CoordinatorHomeTab> {
                   child: Row(
                     children: [
                       Icon(
-                        isBloodDonation ? Icons.bloodtype : Icons.volunteer_activism,
+                        isBloodDonation
+                            ? Icons.bloodtype
+                            : Icons.volunteer_activism,
                         color: isBloodDonation ? Colors.red : null,
                       ),
                       const SizedBox(width: 8),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lendahand/screens/volunteer/volunteer_donate_screen.dart';
+import 'package:lendahand/screens/volunteer/volunteer_update_screen.dart';
 import '../settings/settings_screen.dart';
-import '../tabs/updates_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:weather/weather.dart';
@@ -20,7 +20,7 @@ class _VolunteerScreenState extends State<VolunteerScreen> {
   int _currentIndex = 0;
   final List<Widget> _screens = [
     const VolunteerHomeTab(),
-    const UpdatesScreen(),
+    const VolunteerUpdateScreen(),
     const VolunteerDonateScreen(),
   ];
 
@@ -212,7 +212,9 @@ class _VolunteerHomeTabState extends State<VolunteerHomeTab> {
                   child: Row(
                     children: [
                       Icon(
-                        isBloodDonation ? Icons.bloodtype : Icons.volunteer_activism,
+                        isBloodDonation
+                            ? Icons.bloodtype
+                            : Icons.volunteer_activism,
                         color: isBloodDonation ? Colors.red : null,
                       ),
                       const SizedBox(width: 8),
@@ -324,7 +326,8 @@ class _VolunteerHomeTabState extends State<VolunteerHomeTab> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   const Text(
                                     'Weather',
