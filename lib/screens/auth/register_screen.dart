@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lendahand/theme/app_theme.dart';
 import '../../services/auth_service.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:io';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -23,7 +25,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _fullNameController = TextEditingController();
   final _addressController = TextEditingController();
   final _ageController = TextEditingController();
-  final _bloodGroupController = TextEditingController();
   final _phoneNumberController = TextEditingController();
   final _skillsController = TextEditingController();
   String _selectedSex = 'MALE'; // Default sex
@@ -40,6 +41,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
     'AB+',
     'AB-'
   ];
+
+  // Add these properties after other controllers
+  File? _certificateFile;
+  String? _certificateFileName;
+
+  // Add this method to handle file picking
+  Future<void> _pickCertificate() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+      );
+
+      if (result != null) {
+        setState(() {
+          _certificateFile = File(result.files.single.path!);
+          _certificateFileName = result.files.single.name;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error picking certificate'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -369,6 +399,55 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   });
                                 },
                               ),
+                              const SizedBox(height: 16),
+                              if (_selectedRole.toLowerCase() == 'coordinator')
+                                Container(
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.grey),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  padding: const EdgeInsets.all(8),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Certificate Upload (Optional)',
+                                        style: TextStyle(
+                                          color: Colors.grey,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              _certificateFileName ??
+                                                  'No certificate selected',
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                color:
+                                                    _certificateFileName == null
+                                                        ? Colors.grey
+                                                        : Colors.black,
+                                              ),
+                                            ),
+                                          ),
+                                          TextButton.icon(
+                                            onPressed: _pickCertificate,
+                                            icon: Icon(
+                                              Icons.upload_file,
+                                              color: AppColors.secondaryYellow,
+                                            ),
+                                            label: const Text(
+                                                'Upload Certificate'),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               const SizedBox(height: 24),
                               ElevatedButton(
                                 onPressed: _isLoading
@@ -378,36 +457,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                           setState(() => _isLoading = true);
 
                                           try {
-                                            final (result, error) =
-                                                await _authService
-                                                    .registerWithEmailAndPassword(
+                                            final (result, error) = await _authService.registerWithEmailAndPassword(
                                               _emailController.text,
                                               _passwordController.text,
                                               _selectedRole,
-                                              fullName:
-                                                  _fullNameController.text,
+                                              fullName: _fullNameController.text,
                                               address: _addressController.text,
                                               age: int.parse(_ageController.text),
                                               sex: _selectedSex,
-                                              bloodGroup:
-                                                  _selectedBloodGroup,
-                                              phoneNumber:
-                                                  _phoneNumberController.text,
-                                              skills: _skillsController
-                                                      .text.isEmpty
-                                                  ? 'None'
-                                                  : _skillsController.text,
+                                              bloodGroup: _selectedBloodGroup,
+                                              phoneNumber: _phoneNumberController.text,
+                                              skills: _skillsController.text.isEmpty ? 'None' : _skillsController.text,
+                                              certificateFile: _selectedRole.toLowerCase() == 'coordinator' ? _certificateFile : null,
                                             );
 
-                                            // Check if widget is still mounted before updating state
                                             if (!mounted) return;
-
                                             setState(() => _isLoading = false);
 
                                             if (error != null) {
                                               if (!mounted) return;
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(
+                                              ScaffoldMessenger.of(context).showSnackBar(
                                                 SnackBar(
                                                   content: Text(error),
                                                   backgroundColor: Colors.red,
@@ -415,17 +484,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                               );
                                             } else if (result != null) {
                                               if (!mounted) return;
-                                              Navigator.pushReplacementNamed(
-                                                  context, '/login');
+                                              Navigator.pushReplacementNamed(context, '/login');
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(_selectedRole == 'Commoner' 
+                                                    ? 'Registration successful! Please login.' 
+                                                    : 'Registration successful! Please wait for admin approval.'),
+                                                  backgroundColor: Colors.green,
+                                                ),
+                                              );
                                             }
                                           } catch (e) {
                                             if (!mounted) return;
                                             setState(() => _isLoading = false);
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
+                                            ScaffoldMessenger.of(context).showSnackBar(
                                               SnackBar(
-                                                content: Text(
-                                                    'Error: ${e.toString()}'),
+                                                content: Text('Error: ${e.toString()}'),
                                                 backgroundColor: Colors.red,
                                               ),
                                             );
@@ -436,14 +510,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     ? const SizedBox(
                                         height: 20,
                                         width: 20,
-                                        child: CircularProgressIndicator(
-                                            color: Colors.white),
+                                        child: CircularProgressIndicator(color: Colors.white),
                                       )
                                     : const Text(
                                         'Register',
-                                        style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold),
+                                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                                       ),
                               ),
                               const SizedBox(height: 16),

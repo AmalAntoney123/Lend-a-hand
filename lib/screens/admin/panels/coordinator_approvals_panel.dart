@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:io';
+import 'package:open_file/open_file.dart';
+import 'package:path/path.dart' as path;
 
 class CoordinatorApprovalsPanel extends StatelessWidget {
   const CoordinatorApprovalsPanel({Key? key}) : super(key: key);
@@ -42,6 +45,16 @@ class CoordinatorApprovalsPanel extends StatelessWidget {
             _detailRow('Blood Group', userData['bloodGroup'] ?? 'Not provided'),
             _detailRow('Address', userData['address'] ?? 'Not provided'),
             _detailRow('Skills', userData['skills'] ?? 'Not provided'),
+            if (userData['certificatePath'] != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: ElevatedButton.icon(
+                  onPressed: () =>
+                      _openCertificate(context, userData['certificatePath']),
+                  icon: const Icon(Icons.file_open),
+                  label: const Text('View Certificate'),
+                ),
+              ),
           ],
         ),
       ),
@@ -69,6 +82,64 @@ class CoordinatorApprovalsPanel extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _openCertificate(BuildContext context, String filePath) async {
+    try {
+      print('Opening file: $filePath'); // Debug log
+      final file = File(filePath);
+      
+      if (await file.exists()) {
+        print('File exists'); // Debug log
+        // Get file extension
+        final extension = path.extension(filePath);
+        print('File extension: $extension'); // Debug log
+        
+        // Check if it's an image
+        if (['.jpg', '.jpeg', '.png'].contains(extension.toLowerCase())) {
+          print('Opening as image'); // Debug log
+          // Show image in dialog
+          showDialog(
+            context: context,
+            builder: (context) => Dialog(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AppBar(
+                    title: const Text('Certificate'),
+                    leading: IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ),
+                  Image.file(
+                    file,
+                    fit: BoxFit.contain,
+                  ),
+                ],
+              ),
+            ),
+          );
+        } else {
+          print('Opening with system viewer'); // Debug log
+          final result = await OpenFile.open(filePath);
+          if (result.type != ResultType.done) {
+            throw Exception('Could not open file: ${result.message}');
+          }
+        }
+      } else {
+        print('File does not exist'); // Debug log
+        throw Exception('File not found at path: $filePath');
+      }
+    } catch (e) {
+      print('Error: $e'); // Debug log
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error opening file: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override

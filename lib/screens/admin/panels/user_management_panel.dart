@@ -178,22 +178,6 @@ class _UserManagementPanelState extends State<UserManagementPanel> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: CheckboxListTile(
-                          title: const Text('Show only approved users'),
-                          value: _showOnlyApproved,
-                          onChanged: (value) {
-                            setState(() {
-                              _showOnlyApproved = value!;
-                            });
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ),

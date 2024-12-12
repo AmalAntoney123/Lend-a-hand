@@ -3,6 +3,9 @@ import 'package:weather_animation/weather_animation.dart';
 import 'package:weather/weather.dart';
 import '../../services/weather_service.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
+import '../home/home_screen.dart';
 
 class HomeTabScreen extends StatefulWidget {
   const HomeTabScreen({super.key});
@@ -46,7 +49,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
       // Optionally, show a message to the user
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Location permission is required to fetch weather data.'),
+          content:
+              Text('Location permission is required to fetch weather data.'),
         ),
       );
     }
@@ -207,6 +211,141 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     ];
   }
 
+  Widget _buildLatestDonationCard() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('donations')
+          .orderBy('createdAt', descending: true)
+          .limit(1)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return const SizedBox.shrink();
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Card(
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          );
+        }
+
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final donation =
+            snapshot.data!.docs.first.data() as Map<String, dynamic>;
+        final startDate = (donation['startDate'] as Timestamp).toDate();
+        final endDate = (donation['endDate'] as Timestamp).toDate();
+        final isBloodDonation = donation['isBloodDonation'] ?? false;
+        final now = DateTime.now();
+        final daysLeft = endDate.difference(now).inDays;
+        final hasStarted = startDate.isBefore(now);
+        final isActive = endDate.isAfter(now);
+
+        return GestureDetector(
+          onTap: () {
+            HomeScreen.navigateToTab(context, 2);
+          },
+          child: Card(
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        isBloodDonation
+                            ? Icons.bloodtype
+                            : Icons.volunteer_activism,
+                        color: isBloodDonation ? Colors.red : null,
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Latest Campaign',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        donation['title'] ?? 'Untitled Campaign',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${DateFormat('MMM dd').format(startDate)} - ${DateFormat('MMM dd').format(endDate)}',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: !hasStarted
+                              ? Colors.blue
+                              : !isActive
+                                  ? Colors.grey
+                                  : daysLeft < 7
+                                      ? Colors.red
+                                      : Colors.green,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          !hasStarted
+                              ? 'Upcoming'
+                              : !isActive
+                                  ? 'Completed'
+                                  : '$daysLeft days left',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -311,6 +450,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                     ),
             ),
           ),
+          const SizedBox(height: 16),
+          _buildLatestDonationCard(),
         ],
       ),
     );

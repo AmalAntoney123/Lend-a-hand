@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:lendahand/screens/coordinator/coordinator_screen.dart';
+import 'package:lendahand/screens/home/home_screen.dart';
 import '../../services/auth_service.dart';
 import '../../theme/app_theme.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../admin/admin_dashboard.dart';
+import '../volunteer/volunteer_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -272,26 +277,41 @@ class _LoginScreenState extends State<LoginScreen> {
                                               // Role-based navigation
                                               switch (role) {
                                                 case 'admin':
-                                                  Navigator
-                                                      .pushReplacementNamed(
-                                                          context, '/admin');
+                                                  Navigator.pushAndRemoveUntil(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                        builder: (context) =>
+                                                            AdminDashboard()),
+                                                    (route) => false,
+                                                  );
                                                   break;
                                                 case 'coordinator':
-                                                  Navigator
-                                                      .pushReplacementNamed(
-                                                          context,
-                                                          '/coordinator');
+                                                  Navigator.pushAndRemoveUntil(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                        builder: (context) =>
+                                                            const CoordinatorScreen()),
+                                                    (route) => false,
+                                                  );
                                                   break;
                                                 case 'volunteer':
-                                                  Navigator
-                                                      .pushReplacementNamed(
-                                                          context,
-                                                          '/volunteer');
+                                                  Navigator.pushAndRemoveUntil(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                        builder: (context) =>
+                                                            const VolunteerScreen()),
+                                                    (route) => false,
+                                                  );
                                                   break;
                                                 default:
-                                                  Navigator
-                                                      .pushReplacementNamed(
-                                                          context, '/home');
+                                                  Navigator.pushAndRemoveUntil(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                        builder: (context) =>
+                                                            const HomeScreen(
+                                                                title: 'Home')),
+                                                    (route) => false,
+                                                  );
                                               }
                                             }
                                           } catch (e) {

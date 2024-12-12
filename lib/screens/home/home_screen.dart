@@ -11,6 +11,13 @@ class HomeScreen extends StatefulWidget {
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
+
+  static void navigateToTab(BuildContext context, int index) {
+    final state = context.findAncestorStateOfType<_HomeScreenState>();
+    state?.setState(() {
+      state._currentIndex = index;
+    });
+  }
 }
 
 class _HomeScreenState extends State<HomeScreen> {

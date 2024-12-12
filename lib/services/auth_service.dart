@@ -1,6 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path;
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -84,6 +87,7 @@ class AuthService {
     required String bloodGroup,
     required String phoneNumber,
     required String skills,
+    File? certificateFile,
   }) async {
     try {
       final userCredential = await _auth.createUserWithEmailAndPassword(
@@ -92,6 +96,27 @@ class AuthService {
       );
 
       if (userCredential.user != null) {
+        // Create local directory to store certificates if it doesn't exist
+        String? certificatePath;
+        if (certificateFile != null) {
+          // Get the file extension with the dot
+          final fileExtension = path.extension(certificateFile.path);
+
+          // Create filename with proper extension
+          final fileName =
+              '${userCredential.user!.uid}_${DateTime.now().millisecondsSinceEpoch}${fileExtension.isEmpty ? '.jpg' : fileExtension}';
+
+          final appDir = await getApplicationDocumentsDirectory();
+          final certificatesDir = Directory('${appDir.path}/certificates');
+          if (!await certificatesDir.exists()) {
+            await certificatesDir.create(recursive: true);
+          }
+
+          final localFile = File('${certificatesDir.path}/$fileName');
+          await certificateFile.copy(localFile.path);
+          certificatePath = localFile.path;
+        }
+
         // Create user document in Firestore with additional fields
         await _firestore.collection('users').doc(userCredential.user!.uid).set({
           'uid': userCredential.user!.uid,
@@ -106,9 +131,9 @@ class AuthService {
           'bloodGroup': bloodGroup,
           'phoneNumber': phoneNumber,
           'skills': skills,
+          'certificatePath': certificatePath,
         });
 
-        // Sign out the user after registration
         await _auth.signOut();
       }
 
