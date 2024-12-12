@@ -10,6 +10,7 @@ import '../settings/settings_screen.dart';
 import 'donation_details_screen.dart';
 import 'coordinator_donate_screen.dart';
 import 'update_approvals_screen.dart';
+import '../../services/update_service.dart';
 
 class CoordinatorScreen extends StatefulWidget {
   const CoordinatorScreen({Key? key}) : super(key: key);
@@ -96,6 +97,7 @@ class CoordinatorHomeTab extends StatefulWidget {
 
 class _CoordinatorHomeTabState extends State<CoordinatorHomeTab> {
   final WeatherService _weatherService = WeatherService();
+  final UpdateService _updateService = UpdateService();
   Weather? _weather;
   bool _isLoading = true;
 
@@ -293,118 +295,290 @@ class _CoordinatorHomeTabState extends State<CoordinatorHomeTab> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Weather Card
-            Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Container(
-                width: double.infinity,
-                constraints: const BoxConstraints(
-                  minHeight: 180,
-                  maxHeight: 200,
+  Widget _buildLatestUpdateCard() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('updates')
+          .orderBy('timestamp', descending: true)
+          .limit(1)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        // Get the latest update
+        final latestUpdate = snapshot.data!.docs.first;
+        final updateData = latestUpdate.data() as Map<String, dynamic>;
+        final type = updateData['type'] as String;
+        final severity = updateData['severity'] as String;
+        final expiryDate = updateData['expiryDate'] as Timestamp?;
+
+        // Get pending updates count
+        return StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('updates')
+              .where('status', isEqualTo: 'pending')
+              .snapshots(),
+          builder: (context, pendingSnapshot) {
+            final pendingCount = pendingSnapshot.hasData ? pendingSnapshot.data!.docs.length : 0;
+
+            return GestureDetector(
+              onTap: () {
+                final coordinatorScreen = context.findAncestorStateOfType<_CoordinatorScreenState>();
+                if (coordinatorScreen != null) {
+                  coordinatorScreen.setState(() {
+                    coordinatorScreen._currentIndex = 1;
+                  });
+                }
+              },
+              child: Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : Stack(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: type == 'weather' ? Colors.blue : Colors.red,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(16),
+                          topRight: Radius.circular(16),
+                        ),
+                      ),
+                      child: Row(
                         children: [
-                          // Weather Animation Background
-                          Positioned.fill(
-                            child: WrapperScene(
-                              sizeCanvas: const Size(350, 540),
-                              isLeftCornerGradient: true,
-                              colors: const [
-                                Color(0xff283593),
-                                Color(0xffff8a65),
-                              ],
-                              children:
-                                  _getWeatherWidgets(_weather?.weatherMain),
+                          Icon(
+                            type == 'weather' ? Icons.cloud : Icons.warning,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Latest Update',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
                           ),
-                          // Weather Info
-                          Padding(
-                            padding: const EdgeInsets.all(20),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    const Text(
-                                      'Weather',
-                                      style: TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                        shadows: [
-                                          Shadow(
-                                            offset: Offset(1, 1),
-                                            blurRadius: 2,
-                                            color: Colors.black26,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Icon(
-                                      Icons.cloud,
-                                      color: Colors.white.withOpacity(0.8),
-                                      size: 28,
-                                    ),
-                                  ],
-                                ),
-                                const Spacer(),
-                                Text(
-                                  '${_weather?.temperature?.celsius?.toStringAsFixed(1)}°C',
-                                  style: const TextStyle(
-                                    fontSize: 48,
-                                    fontWeight: FontWeight.bold,
+                          const Spacer(),
+                          if (pendingCount > 0)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.orange,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.pending_actions,
                                     color: Colors.white,
-                                    shadows: [
-                                      Shadow(
-                                        offset: Offset(1, 1),
-                                        blurRadius: 2,
-                                        color: Colors.black26,
-                                      ),
-                                    ],
+                                    size: 16,
                                   ),
-                                ),
-                                Text(
-                                  _weather?.weatherDescription ?? 'Unknown',
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    color: Colors.white,
-                                    shadows: [
-                                      Shadow(
-                                        offset: Offset(1, 1),
-                                        blurRadius: 2,
-                                        color: Colors.black26,
-                                      ),
-                                    ],
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '$pendingCount pending',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
+                            ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              severity.toUpperCase(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ],
                       ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            updateData['title'],
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(updateData['description']),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              const Icon(Icons.location_on,
+                                  size: 16, color: Colors.grey),
+                              const SizedBox(width: 4),
+                              Text(
+                                updateData['location'],
+                                style: const TextStyle(color: Colors.grey),
+                              ),
+                              const Spacer(),
+                              if (expiryDate != null) ...[
+                                const Icon(Icons.timer_outlined,
+                                    size: 16, color: Colors.grey),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Expires ${DateFormat('MMM dd').format(expiryDate.toDate())}',
+                                  style: const TextStyle(color: Colors.grey),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Weather Card
+          Card(
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
-            const SizedBox(height: 16),
-            // Latest Donation Card
-            _buildLatestDonationCard(),
-          ],
-        ),
+            clipBehavior: Clip.antiAlias,
+            child: Container(
+              width: double.infinity,
+              constraints: const BoxConstraints(
+                minHeight: 180,
+                maxHeight: 200,
+              ),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : Stack(
+                      children: [
+                        // Weather Animation Background
+                        Positioned.fill(
+                          child: WrapperScene(
+                            sizeCanvas: const Size(350, 540),
+                            isLeftCornerGradient: true,
+                            colors: const [
+                              Color(0xff283593),
+                              Color(0xffff8a65),
+                            ],
+                            children:
+                                _getWeatherWidgets(_weather?.weatherMain),
+                          ),
+                        ),
+                        // Weather Info
+                        Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'Weather',
+                                    style: TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      shadows: [
+                                        Shadow(
+                                          offset: Offset(1, 1),
+                                          blurRadius: 2,
+                                          color: Colors.black26,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Icon(
+                                    Icons.cloud,
+                                    color: Colors.white.withOpacity(0.8),
+                                    size: 28,
+                                  ),
+                                ],
+                              ),
+                              const Spacer(),
+                              Text(
+                                '${_weather?.temperature?.celsius?.toStringAsFixed(1)}°C',
+                                style: const TextStyle(
+                                  fontSize: 48,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  shadows: [
+                                    Shadow(
+                                      offset: Offset(1, 1),
+                                      blurRadius: 2,
+                                      color: Colors.black26,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Text(
+                                _weather?.weatherDescription ?? 'Unknown',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.white,
+                                  shadows: [
+                                    Shadow(
+                                      offset: Offset(1, 1),
+                                      blurRadius: 2,
+                                      color: Colors.black26,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Add Latest Update Card
+          _buildLatestUpdateCard(),
+          const SizedBox(height: 16),
+          // Latest Donation Card
+          _buildLatestDonationCard(),
+        ],
       ),
     );
   }

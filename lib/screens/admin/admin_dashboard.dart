@@ -5,6 +5,7 @@ import 'panels/coordinator_approvals_panel.dart';
 import 'panels/user_management_panel.dart';
 import 'panels/reports_panel.dart';
 import 'panels/settings_panel.dart';
+import 'panels/contact_requests_panel.dart';
 import '../../theme/app_theme.dart';
 
 class AdminDashboard extends StatefulWidget {
@@ -18,8 +19,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     'Volunteer Requests',
     'Coordinator Approvals',
     'User Management',
-    'Reports',
-    'Settings'
+    'Contact Requests',
   ];
 
   Widget _getSelectedScreen() {
@@ -33,6 +33,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
       case 3:
         return const ReportsPanel();
       case 4:
+        return const ContactRequestsPanel();
+      case 5:
         return const SettingsPanel();
       default:
         return const VolunteerRequestsPanel();
@@ -104,32 +106,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     },
                   ),
                   ListTile(
-                    selected: _selectedIndex == 3,
-                    selectedTileColor: AppColors.primaryYellow.withOpacity(0.1),
-                    selectedColor: AppColors.primaryYellow,
-                    leading: Icon(
-                      Icons.bar_chart,
-                      color: _selectedIndex == 3
-                          ? AppColors.primaryYellow
-                          : AppColors.secondaryYellow,
-                    ),
-                    title: const Text('Reports'),
-                    onTap: () {
-                      setState(() => _selectedIndex = 3);
-                      Navigator.pop(context);
-                    },
-                  ),
-                  ListTile(
                     selected: _selectedIndex == 4,
                     selectedTileColor: AppColors.primaryYellow.withOpacity(0.1),
                     selectedColor: AppColors.primaryYellow,
                     leading: Icon(
-                      Icons.settings,
+                      Icons.contact_support,
                       color: _selectedIndex == 4
                           ? AppColors.primaryYellow
                           : AppColors.secondaryYellow,
                     ),
-                    title: const Text('Settings'),
+                    title: const Text('Contact Requests'),
                     onTap: () {
                       setState(() => _selectedIndex = 4);
                       Navigator.pop(context);

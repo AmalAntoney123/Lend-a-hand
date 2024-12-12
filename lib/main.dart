@@ -9,9 +9,12 @@ import 'theme/app_theme.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'screens/admin/admin_dashboard.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService.init();
+  await NotificationService.requestPermission();
   await Firebase.initializeApp();
   runApp(const MyApp());
 }

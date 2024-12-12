@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import '../../services/update_service.dart';
+import '../../services/notification_service.dart';
 
 class UpdateApprovalsScreen extends StatelessWidget {
   final UpdateService _updateService = UpdateService();
@@ -205,6 +206,15 @@ class UpdateApprovalsScreen extends StatelessWidget {
                                 coordinatorNote: descriptionController.text,
                                 expiryDate: selectedExpiryDate,
                               );
+                              
+                              await NotificationService.showUpdateApprovedNotification(
+                                title: titleController.text,
+                                body: descriptionController.text,
+                                type: updateData['type'],
+                                severity: updateData['severity'],
+                                location: updateData['location'],
+                              );
+                              
                               Navigator.pop(context);
                             } catch (e) {
                               ScaffoldMessenger.of(context).showSnackBar(

@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import '../home/home_screen.dart';
+import '../../services/update_service.dart';
 
 class HomeTabScreen extends StatefulWidget {
   const HomeTabScreen({super.key});
@@ -16,6 +17,7 @@ class HomeTabScreen extends StatefulWidget {
 
 class _HomeTabScreenState extends State<HomeTabScreen> {
   final WeatherService _weatherService = WeatherService();
+  final UpdateService _updateService = UpdateService();
   Weather? _weather;
   bool _isLoading = true;
 
@@ -346,6 +348,138 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     );
   }
 
+  Widget _buildLatestUpdateCard() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: _updateService.getUpdates(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError || !snapshot.hasData) {
+          return const SizedBox.shrink();
+        }
+
+        final updates = snapshot.data!.docs;
+        final now = DateTime.now();
+
+        // Filter unexpired updates
+        final unexpiredUpdates = updates.where((doc) {
+          final update = doc.data() as Map<String, dynamic>;
+          final expiryDate = update['expiryDate'] as Timestamp?;
+          return expiryDate != null && expiryDate.toDate().isAfter(now);
+        }).toList();
+
+        if (unexpiredUpdates.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        // Get the latest update
+        final latestUpdate = unexpiredUpdates.first;
+        final updateData = latestUpdate.data() as Map<String, dynamic>;
+        final type = updateData['type'] as String;
+        final severity = updateData['severity'] as String;
+        final expiryDate = updateData['expiryDate'] as Timestamp;
+
+        return GestureDetector(
+          onTap: () {
+            HomeScreen.navigateToTab(context, 1); // Navigate to Updates tab
+          },
+          child: Card(
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: type == 'weather' ? Colors.blue : Colors.red,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        type == 'weather' ? Icons.cloud : Icons.warning,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Latest Update',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          severity.toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        updateData['title'],
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(updateData['description']),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(Icons.location_on,
+                              size: 16, color: Colors.grey),
+                          const SizedBox(width: 4),
+                          Text(
+                            updateData['location'],
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                          const Spacer(),
+                          const Icon(Icons.timer_outlined,
+                              size: 16, color: Colors.grey),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Expires ${DateFormat('MMM dd').format(expiryDate.toDate())}',
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -450,6 +584,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                     ),
             ),
           ),
+          const SizedBox(height: 16),
+          _buildLatestUpdateCard(),
           const SizedBox(height: 16),
           _buildLatestDonationCard(),
         ],

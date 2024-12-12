@@ -286,6 +286,150 @@ class _VolunteerHomeTabState extends State<VolunteerHomeTab> {
     );
   }
 
+  Widget _buildLatestUpdateCard() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('updates')
+          .orderBy('timestamp', descending: true)
+          .limit(10)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError || !snapshot.hasData) {
+          return const SizedBox.shrink();
+        }
+
+        final updates = snapshot.data!.docs;
+        final now = DateTime.now();
+
+        // Filter approved and unexpired updates
+        final validUpdates = updates.where((doc) {
+          final update = doc.data() as Map<String, dynamic>;
+          final expiryDate = update['expiryDate'] as Timestamp?;
+          final status = update['status'] as String?;
+          return status == 'approved' && 
+                 expiryDate != null && 
+                 expiryDate.toDate().isAfter(now);
+        }).toList();
+
+        if (validUpdates.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        // Get the latest update
+        final latestUpdate = validUpdates.first;
+        final updateData = latestUpdate.data() as Map<String, dynamic>;
+        final type = updateData['type'] as String;
+        final severity = updateData['severity'] as String;
+        final expiryDate = updateData['expiryDate'] as Timestamp;
+
+        return GestureDetector(
+          onTap: () {
+            final volunteerScreen = context.findAncestorStateOfType<_VolunteerScreenState>();
+            if (volunteerScreen != null) {
+              volunteerScreen.setState(() {
+                volunteerScreen._currentIndex = 1;
+              });
+            }
+          },
+          child: Card(
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: type == 'weather' ? Colors.blue : Colors.red,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        type == 'weather' ? Icons.cloud : Icons.warning,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Latest Alert',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          severity.toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        updateData['title'],
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(updateData['description']),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(Icons.location_on,
+                              size: 16, color: Colors.grey),
+                          const SizedBox(width: 4),
+                          Text(
+                            updateData['location'],
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                          const Spacer(),
+                          const Icon(Icons.timer_outlined,
+                              size: 16, color: Colors.grey),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Expires ${DateFormat('MMM dd').format(expiryDate.toDate())}',
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(

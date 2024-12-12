@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/auth_service.dart';
 import '../../theme/app_theme.dart';
 import 'edit_account_screen.dart';
+import 'contact_us_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   final AuthService _authService = AuthService();
@@ -124,6 +125,23 @@ class SettingsScreen extends StatelessWidget {
                     title: const Text('Privacy & Security'),
                     onTap: () {
                       // TODO: Implement privacy settings
+                    },
+                  ),
+                ),
+                Card(
+                  child: ListTile(
+                    leading: Icon(
+                      Icons.contact_support_outlined,
+                      color: AppColors.secondaryYellow,
+                    ),
+                    title: const Text('Contact Us'),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ContactUsScreen(),
+                        ),
+                      );
                     },
                   ),
                 ),
