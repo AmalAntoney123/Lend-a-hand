@@ -27,6 +27,8 @@ class UpdateService {
     required String type,
     required String location,
     required String severity,
+    String status = 'pending',
+    DateTime? expiryDate,
     String? imageUrl,
   }) async {
     try {
@@ -40,7 +42,7 @@ class UpdateService {
         'location': location,
         'severity': severity,
         'imageUrl': imageUrl,
-        'status': 'pending',
+        'status': status,
         'timestamp': FieldValue.serverTimestamp(),
         'authorId': user.uid,
         'authorName': user.displayName ?? 'Anonymous',

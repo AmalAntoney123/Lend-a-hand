@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'panels/update_approvals_panel.dart';
 import 'panels/volunteer_requests_panel.dart';
 import 'panels/coordinator_approvals_panel.dart';
 import 'panels/user_management_panel.dart';
@@ -20,6 +21,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
     'Coordinator Approvals',
     'User Management',
     'Contact Requests',
+    'Update Approvals',
+    'Settings',
   ];
 
   Widget _getSelectedScreen() {
@@ -35,7 +38,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
       case 4:
         return const ContactRequestsPanel();
       case 5:
-        return const SettingsPanel();
+        return UpdateApprovalsPanel();
+
       default:
         return const VolunteerRequestsPanel();
     }
@@ -118,6 +122,22 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     title: const Text('Contact Requests'),
                     onTap: () {
                       setState(() => _selectedIndex = 4);
+                      Navigator.pop(context);
+                    },
+                  ),
+                  ListTile(
+                    selected: _selectedIndex == 5,
+                    selectedTileColor: AppColors.primaryYellow.withOpacity(0.1),
+                    selectedColor: AppColors.primaryYellow,
+                    leading: Icon(
+                      Icons.approval,
+                      color: _selectedIndex == 5
+                          ? AppColors.primaryYellow
+                          : AppColors.secondaryYellow,
+                    ),
+                    title: const Text('Update Approvals'),
+                    onTap: () {
+                      setState(() => _selectedIndex = 5);
                       Navigator.pop(context);
                     },
                   ),

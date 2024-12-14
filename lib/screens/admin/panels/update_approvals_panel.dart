@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
-import '../../services/update_service.dart';
-import '../../services/notification_service.dart';
+import '../../../services/update_service.dart';
+import '../../../services/notification_service.dart';
 
-class UpdateApprovalsScreen extends StatelessWidget {
+class UpdateApprovalsPanel extends StatelessWidget {
   final UpdateService _updateService = UpdateService();
 
-  UpdateApprovalsScreen({Key? key}) : super(key: key);
+  UpdateApprovalsPanel({Key? key}) : super(key: key);
 
   void _showReviewDialog(
       BuildContext context, String updateId, Map<String, dynamic> updateData) {
@@ -179,15 +179,10 @@ class UpdateApprovalsScreen extends StatelessWidget {
                       Expanded(
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                Theme.of(context).colorScheme.primary,
-                            foregroundColor:
-                                Theme.of(context).colorScheme.onPrimary,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            elevation: 0,
                           ),
                           onPressed: () async {
                             if (selectedExpiryDate == null) {
@@ -206,15 +201,16 @@ class UpdateApprovalsScreen extends StatelessWidget {
                                 coordinatorNote: descriptionController.text,
                                 expiryDate: selectedExpiryDate,
                               );
-                              
-                              await NotificationService.showUpdateApprovedNotification(
+
+                              await NotificationService
+                                  .showUpdateApprovedNotification(
                                 title: titleController.text,
                                 body: descriptionController.text,
                                 type: updateData['type'],
                                 severity: updateData['severity'],
                                 location: updateData['location'],
                               );
-                              
+
                               Navigator.pop(context);
                             } catch (e) {
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -227,7 +223,6 @@ class UpdateApprovalsScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
                 ],
               ),
             ),
@@ -288,8 +283,10 @@ class UpdateApprovalsScreen extends StatelessWidget {
                       ),
                     ),
                     items: const [
-                      DropdownMenuItem(value: 'weather', child: Text('Weather Update')),
-                      DropdownMenuItem(value: 'disaster', child: Text('Disaster Alert')),
+                      DropdownMenuItem(
+                          value: 'weather', child: Text('Weather Update')),
+                      DropdownMenuItem(
+                          value: 'disaster', child: Text('Disaster Alert')),
                     ],
                     onChanged: (value) => selectedType = value!,
                   ),
@@ -306,7 +303,8 @@ class UpdateApprovalsScreen extends StatelessWidget {
                       DropdownMenuItem(value: 'low', child: Text('Low')),
                       DropdownMenuItem(value: 'medium', child: Text('Medium')),
                       DropdownMenuItem(value: 'high', child: Text('High')),
-                      DropdownMenuItem(value: 'critical', child: Text('Critical')),
+                      DropdownMenuItem(
+                          value: 'critical', child: Text('Critical')),
                     ],
                     onChanged: (value) => selectedSeverity = value!,
                   ),
@@ -346,7 +344,8 @@ class UpdateApprovalsScreen extends StatelessWidget {
                     onTap: () async {
                       final DateTime? date = await showDatePicker(
                         context: context,
-                        initialDate: DateTime.now().add(const Duration(days: 1)),
+                        initialDate:
+                            DateTime.now().add(const Duration(days: 1)),
                         firstDate: DateTime.now(),
                         lastDate: DateTime.now().add(const Duration(days: 365)),
                       );
@@ -384,7 +383,8 @@ class UpdateApprovalsScreen extends StatelessWidget {
                               children: [
                                 Text(
                                   'Set Expiry Date',
-                                  style: Theme.of(context).textTheme.titleMedium,
+                                  style:
+                                      Theme.of(context).textTheme.titleMedium,
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
@@ -426,7 +426,8 @@ class UpdateApprovalsScreen extends StatelessWidget {
                             selectedExpiryDate == null) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Please fill all fields and set expiry date'),
+                              content: Text(
+                                  'Please fill all fields and set expiry date'),
                               backgroundColor: Colors.red,
                             ),
                           );
@@ -443,8 +444,9 @@ class UpdateApprovalsScreen extends StatelessWidget {
                             status: 'approved',
                             expiryDate: selectedExpiryDate,
                           );
-                          
-                          await NotificationService.showUpdateApprovedNotification(
+
+                          await NotificationService
+                              .showUpdateApprovedNotification(
                             title: titleController.text,
                             body: descriptionController.text,
                             type: selectedType,
@@ -480,6 +482,21 @@ class UpdateApprovalsScreen extends StatelessWidget {
     );
   }
 
+  Color _getSeverityColor(String severity) {
+    switch (severity.toLowerCase()) {
+      case 'low':
+        return Colors.green;
+      case 'medium':
+        return Colors.orange;
+      case 'high':
+        return Colors.deepOrange;
+      case 'critical':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
   Widget _buildUpdatesList(String status) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
@@ -496,7 +513,6 @@ class UpdateApprovalsScreen extends StatelessWidget {
         }
 
         final updates = snapshot.data?.docs ?? [];
-        final now = DateTime.now();
 
         if (updates.isEmpty) {
           return Center(
@@ -512,9 +528,6 @@ class UpdateApprovalsScreen extends StatelessWidget {
             final type = update['type'] as String;
             final severity = update['severity'] as String;
             final timestamp = update['timestamp'] as Timestamp;
-            final expiryDate = update['expiryDate'] as Timestamp?;
-            final isExpired =
-                expiryDate != null && expiryDate.toDate().isBefore(now);
 
             return Card(
               elevation: 4,
@@ -533,9 +546,7 @@ class UpdateApprovalsScreen extends StatelessWidget {
                     ),
                     title: Text(
                       update['title'],
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     subtitle: Text(
                       DateFormat.yMMMd().add_jm().format(timestamp.toDate()),
@@ -617,95 +628,6 @@ class UpdateApprovalsScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                  if (status == 'approved')
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: isExpired
-                            ? Colors.red.withOpacity(0.1)
-                            : Colors.green.withOpacity(0.1),
-                        borderRadius: const BorderRadius.only(
-                          bottomLeft: Radius.circular(4),
-                          bottomRight: Radius.circular(4),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (update['coordinatorNote'] != null) ...[
-                            const Text(
-                              'Coordinator Note:',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.green,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(update['coordinatorNote']),
-                            const SizedBox(height: 8),
-                          ],
-                          if (expiryDate != null) ...[
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.timer_outlined,
-                                  size: 16,
-                                  color: isExpired ? Colors.red : Colors.green,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  isExpired
-                                      ? 'Expired on ${DateFormat('MMM dd, yyyy HH:mm').format(expiryDate.toDate())}'
-                                      : 'Expires on ${DateFormat('MMM dd, yyyy HH:mm').format(expiryDate.toDate())}',
-                                  style: TextStyle(
-                                    color:
-                                        isExpired ? Colors.red : Colors.green,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                          ],
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              TextButton(
-                                onPressed: () => _showReviewDialog(
-                                  context,
-                                  updates[index].id,
-                                  update,
-                                ),
-                                child: const Text('Edit'),
-                              ),
-                              const SizedBox(width: 8),
-                              TextButton(
-                                onPressed: () async {
-                                  try {
-                                    await FirebaseFirestore.instance
-                                        .collection('updates')
-                                        .doc(updates[index].id)
-                                        .delete();
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Update deleted'),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                  } catch (e) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('Error: $e')),
-                                    );
-                                  }
-                                },
-                                child: const Text('Delete'),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
                 ],
               ),
             );
@@ -715,31 +637,15 @@ class UpdateApprovalsScreen extends StatelessWidget {
     );
   }
 
-  Color _getSeverityColor(String severity) {
-    switch (severity.toLowerCase()) {
-      case 'low':
-        return Colors.green;
-      case 'medium':
-        return Colors.orange;
-      case 'high':
-        return Colors.deepOrange;
-      case 'critical':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: Theme.of(context).colorScheme.surface,
           toolbarHeight: 0,
           bottom: TabBar(
-            labelColor: Theme.of(context).colorScheme.primary,
+            labelColor: Colors.white,
             unselectedLabelColor:
                 Theme.of(context).colorScheme.onSurfaceVariant,
             indicatorColor: Theme.of(context).colorScheme.primary,
