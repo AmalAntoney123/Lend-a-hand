@@ -2,7 +2,7 @@ class Group {
   final String id;
   final String name;
   final String coordinatorId;
-  final List<String> volunteerIds;
+  List<String> volunteerIds;
   final DateTime createdAt;
 
   Group({

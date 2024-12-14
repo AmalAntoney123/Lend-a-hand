@@ -252,9 +252,17 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.person_add),
+                        onPressed: _showAddVolunteersDialog,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -264,8 +272,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
               child: StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
                     .collection('users')
-                    .where(FieldPath.documentId,
-                        whereIn: widget.group.volunteerIds)
+                    .where(FieldPath.documentId, whereIn: widget.group.volunteerIds)
                     .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.hasError) {
@@ -288,17 +295,14 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                     controller: scrollController,
                     itemCount: volunteers.length,
                     itemBuilder: (context, index) {
-                      final volunteer =
-                          volunteers[index].data() as Map<String, dynamic>;
+                      final volunteer = volunteers[index].data() as Map<String, dynamic>;
+                      final volunteerId = volunteers[index].id;
 
                       return ListTile(
                         leading: CircleAvatar(
-                          backgroundColor:
-                              Theme.of(context).colorScheme.primary,
+                          backgroundColor: Theme.of(context).colorScheme.primary,
                           child: Text(
-                            (volunteer['fullName'] ?? 'U')
-                                .substring(0, 1)
-                                .toUpperCase(),
+                            (volunteer['fullName'] ?? 'U').substring(0, 1).toUpperCase(),
                             style: const TextStyle(color: Colors.white),
                           ),
                         ),
@@ -309,6 +313,10 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                             Text(volunteer['email'] ?? ''),
                             Text(volunteer['phoneNumber'] ?? 'No phone number'),
                           ],
+                        ),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.remove_circle_outline, color: Colors.red),
+                          onPressed: () => _removeVolunteerFromGroup(volunteerId),
                         ),
                         isThreeLine: true,
                       );
@@ -321,6 +329,116 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
         ),
       ),
     );
+  }
+
+  void _showAddVolunteersDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add Volunteers'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('users')
+                .where('role', isEqualTo: 'volunteer')
+                .where('isApproved', isEqualTo: true)
+                .where(FieldPath.documentId, whereNotIn: widget.group.volunteerIds)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return const Text('Something went wrong');
+              }
+
+              if (!snapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              final volunteers = snapshot.data!.docs;
+
+              if (volunteers.isEmpty) {
+                return const Text('No volunteers available to add');
+              }
+
+              return ListView.builder(
+                shrinkWrap: true,
+                itemCount: volunteers.length,
+                itemBuilder: (context, index) {
+                  final volunteer = volunteers[index].data() as Map<String, dynamic>;
+                  final volunteerId = volunteers[index].id;
+
+                  return ListTile(
+                    title: Text(volunteer['fullName'] ?? 'Unknown'),
+                    subtitle: Text(volunteer['email'] ?? ''),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.add_circle_outline, color: Colors.green),
+                      onPressed: () {
+                        _addVolunteerToGroup(volunteerId);
+                        Navigator.pop(context);
+                      },
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _addVolunteerToGroup(String volunteerId) async {
+    try {
+      final updatedVolunteerIds = [...widget.group.volunteerIds, volunteerId];
+      await FirebaseFirestore.instance
+          .collection('groups')
+          .doc(widget.group.id)
+          .update({'volunteerIds': updatedVolunteerIds});
+      
+      // Update the local group object
+      widget.group.volunteerIds = updatedVolunteerIds;
+      
+      if (mounted) {
+        Navigator.pop(context); // Close the add volunteers dialog
+        _showVolunteerDetails(); // Reopen the members list
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error adding volunteer: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _removeVolunteerFromGroup(String volunteerId) async {
+    try {
+      final updatedVolunteerIds = widget.group.volunteerIds.where((id) => id != volunteerId).toList();
+      await FirebaseFirestore.instance
+          .collection('groups')
+          .doc(widget.group.id)
+          .update({'volunteerIds': updatedVolunteerIds});
+      
+      // Update the local group object
+      widget.group.volunteerIds = updatedVolunteerIds;
+      
+      if (mounted) {
+        Navigator.pop(context); // Close the current bottom sheet
+        _showVolunteerDetails(); // Reopen with updated list
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error removing volunteer: $e')),
+        );
+      }
+    }
   }
 
   void _showAcceptedVolunteers(Map<String, bool> responses) {

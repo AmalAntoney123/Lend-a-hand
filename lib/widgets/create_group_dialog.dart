@@ -91,12 +91,14 @@ class _CreateGroupDialogState extends State<CreateGroupDialog> {
                     shrinkWrap: true,
                     itemCount: volunteers.length,
                     itemBuilder: (context, index) {
-                      final volunteer = volunteers[index].data() as Map<String, dynamic>;
+                      final volunteer =
+                          volunteers[index].data() as Map<String, dynamic>;
                       final volunteerId = volunteers[index].id;
-                      final isSelected = _selectedVolunteers.contains(volunteerId);
+                      final isSelected =
+                          _selectedVolunteers.contains(volunteerId);
 
                       return CheckboxListTile(
-                        title: Text(volunteer['name'] ?? 'Unknown'),
+                        title: Text(volunteer['fullName'] ?? 'Unknown'),
                         subtitle: Text(volunteer['email'] ?? ''),
                         value: isSelected,
                         onChanged: (bool? value) {
@@ -141,4 +143,4 @@ class _CreateGroupDialogState extends State<CreateGroupDialog> {
     _nameController.dispose();
     super.dispose();
   }
-} 
+}
