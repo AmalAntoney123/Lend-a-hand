@@ -11,6 +11,7 @@ import 'donation_details_screen.dart';
 import 'coordinator_donate_screen.dart';
 import 'update_approvals_screen.dart';
 import '../../services/update_service.dart';
+import 'groups_screen.dart';
 
 class CoordinatorScreen extends StatefulWidget {
   const CoordinatorScreen({Key? key}) : super(key: key);
@@ -26,6 +27,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
     UpdateApprovalsScreen(),
     const CoordinatorDonateScreen(),
     const VolunteerRequestsScreen(),
+    const GroupsScreen(),
   ];
 
   @override
@@ -79,6 +81,10 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
             BottomNavigationBarItem(
               icon: Icon(Icons.group_add),
               label: 'Volunteers',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.group),
+              label: 'Groups',
             ),
           ],
         ),
@@ -303,7 +309,9 @@ class _CoordinatorHomeTabState extends State<CoordinatorHomeTab> {
           .limit(1)
           .snapshots(),
       builder: (context, snapshot) {
-        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.docs.isEmpty) {
+        if (snapshot.hasError ||
+            !snapshot.hasData ||
+            snapshot.data!.docs.isEmpty) {
           return const SizedBox.shrink();
         }
 
@@ -321,11 +329,13 @@ class _CoordinatorHomeTabState extends State<CoordinatorHomeTab> {
               .where('status', isEqualTo: 'pending')
               .snapshots(),
           builder: (context, pendingSnapshot) {
-            final pendingCount = pendingSnapshot.hasData ? pendingSnapshot.data!.docs.length : 0;
+            final pendingCount =
+                pendingSnapshot.hasData ? pendingSnapshot.data!.docs.length : 0;
 
             return GestureDetector(
               onTap: () {
-                final coordinatorScreen = context.findAncestorStateOfType<_CoordinatorScreenState>();
+                final coordinatorScreen =
+                    context.findAncestorStateOfType<_CoordinatorScreenState>();
                 if (coordinatorScreen != null) {
                   coordinatorScreen.setState(() {
                     coordinatorScreen._currentIndex = 1;
@@ -499,8 +509,7 @@ class _CoordinatorHomeTabState extends State<CoordinatorHomeTab> {
                               Color(0xff283593),
                               Color(0xffff8a65),
                             ],
-                            children:
-                                _getWeatherWidgets(_weather?.weatherMain),
+                            children: _getWeatherWidgets(_weather?.weatherMain),
                           ),
                         ),
                         // Weather Info

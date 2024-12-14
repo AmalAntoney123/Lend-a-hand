@@ -8,6 +8,7 @@ import 'package:weather/weather.dart';
 import 'package:weather_animation/weather_animation.dart';
 import '../../services/weather_service.dart';
 import 'volunteer_donation_details_screen.dart';
+import 'volunteer_groups_screen.dart';
 
 class VolunteerScreen extends StatefulWidget {
   const VolunteerScreen({Key? key}) : super(key: key);
@@ -22,6 +23,7 @@ class _VolunteerScreenState extends State<VolunteerScreen> {
     const VolunteerHomeTab(),
     const VolunteerUpdateScreen(),
     const VolunteerDonateScreen(),
+    VolunteerGroupsScreen(),
   ];
 
   @override
@@ -65,12 +67,16 @@ class _VolunteerScreenState extends State<VolunteerScreen> {
               label: 'Home',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.notifications),
+              icon: Icon(Icons.update),
               label: 'Updates',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.volunteer_activism),
               label: 'Donate',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.group),
+              label: 'Groups',
             ),
           ],
         ),
